@@ -1,0 +1,38 @@
+.public-layout {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.public-layout__header,
+.public-layout__footer {
+  background: var(--color-surface);
+}
+
+.public-layout__header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.public-layout__header-content {
+  display: flex;
+  align-items: center;
+}
+
+.public-layout__brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-primary-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-layout__main {
+  display: flex;
+  flex: 1;
+}
+
+.public-layout__footer {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  padding-block: var(--space-md);
+}

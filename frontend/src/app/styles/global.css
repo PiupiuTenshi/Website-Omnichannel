@@ -1,0 +1,29 @@
+@import "./reset.css";
+@import "./tokens.css";
+@import "../../layouts/PublicLayout.css";
+
+body {
+  min-width: 20rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+button,
+a,
+input,
+select {
+  min-height: var(--touch-target-size);
+}
+
+.app-container {
+  width: min(100% - 2rem, var(--content-max-width));
+  margin-inline: auto;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: var(--space-md);
+}

@@ -1,0 +1,518 @@
+PHASE_NUMBER = 1
+
+Bạn đang quản lý Git cho dự án Tạp hóa chị Tỏ.
+
+Hãy xử lý Git cho phase có số PHASE_NUMBER được khai báo ở đầu prompt.
+
+Bạn phải tự đọc docs/phases.md và docs/git-phases.md để xác định:
+
+- Tên phase.
+- Phase slug.
+- Phase branch.
+- Feature branch liên quan.
+- Base branch.
+- Checklist phase.
+- Exit checklist.
+- Tag/version checkpoint.
+- Quy trình pull request.
+- Quy trình commit và push.
+
+Không yêu cầu người dùng nhập lại tên phase hoặc branch.
+
+==================================================
+A. TÀI LIỆU BẮT BUỘC
+==================================================
+
+Đọc:
+
+1. README.md
+2. docs/AGENT.md
+3. docs/phases.md
+4. docs/git-phases.md
+5. docs/naming-convention.md
+6. docs/rule.md
+7. docs/ci-cd.md
+8. docs/release-versioning.md
+
+Nếu tài liệu mâu thuẫn:
+
+Ưu tiên theo thứ tự:
+
+1. docs/AGENT.md
+2. docs/rule.md
+3. docs/phases.md
+4. docs/git-phases.md
+5. docs/release-versioning.md
+6. docs/ci-cd.md
+
+Báo rõ mâu thuẫn trước khi thực hiện Git write operation.
+
+==================================================
+B. CHUYỂN SỐ PHASE THÀNH TÊN BRANCH
+==================================================
+
+Từ PHASE_NUMBER:
+
+1. Tìm phase tương ứng trong docs/phases.md.
+2. Lấy tên và slug chính thức.
+3. Chuẩn hóa số thành hai chữ số nếu convention yêu cầu.
+
+Ví dụ:
+
+PHASE_NUMBER = 1
+
+có thể tạo:
+
+phase/01-identity-store-settings
+
+PHASE_NUMBER = 2
+
+có thể tạo:
+
+phase/02-catalog-media
+
+Không hard-code các tên ví dụ trên nếu docs hiện tại quy định khác.
+
+==================================================
+C. TỰ XÁC ĐỊNH TRẠNG THÁI GIT
+==================================================
+
+Chạy các lệnh chỉ đọc trước:
+
+- git status --short --branch
+- git branch --show-current
+- git branch --all
+- git remote -v
+- git log --oneline --decorate -n 20
+- git tag --list
+- git diff --stat
+- git diff --cached --stat
+
+Xác định một trong các trạng thái:
+
+1. Phase chưa bắt đầu.
+2. Phase branch đã có nhưng chưa có feature branch.
+3. Đang làm feature branch.
+4. Feature đã sẵn sàng commit.
+5. Feature đã commit nhưng chưa push.
+6. Feature đã push và sẵn sàng PR.
+7. Các feature đã merge, phase đang hoàn thiện.
+8. Phase sẵn sàng PR vào develop.
+9. Phase đã merge và sẵn sàng tạo tag.
+10. Repository có xung đột hoặc working tree không sạch.
+
+Không đoán trạng thái chỉ dựa vào tên branch; phải kiểm tra log, status và checklist.
+
+==================================================
+D. QUY TẮC AN TOÀN
+==================================================
+
+Không được:
+
+- git reset --hard
+- git clean -fd
+- git push --force
+- git push --force-with-lease
+- Xóa branch khi chưa được xác nhận.
+- Rebase branch đã được chia sẻ.
+- Sửa hoặc di chuyển tag cũ.
+- Commit secret.
+- Commit file build.
+- Commit thay đổi không liên quan.
+- Merge trực tiếp vào main.
+- Push trực tiếp vào main.
+- Commit trực tiếp trên main.
+- Commit feature trực tiếp trên develop.
+- Bỏ qua CI đang thất bại.
+
+Không dùng:
+
+git add .
+
+Phải stage chính xác từng file hoặc từng nhóm file liên quan.
+
+==================================================
+E. KIỂM TRA FILE KHÔNG ĐƯỢC COMMIT
+==================================================
+
+Không stage:
+
+- .env
+- *.user
+- *.suo
+- bin/
+- obj/
+- node_modules/
+- dist/
+- coverage/
+- TestResults/
+- file secret
+- API key
+- password
+- connection string thật
+- SMTP credential
+- Cloudflare R2 secret
+- Goong API key
+- SMS API key
+
+Các file Markdown trong docs đang có thể bị .gitignore.
+
+Nếu docs/*.md bị ignore:
+
+- Không cố force-add trừ khi người dùng yêu cầu.
+- Vẫn có thể đọc chúng ở local.
+- Báo rõ rằng Codex cloud/GitHub sẽ không nhận các tài liệu này.
+
+==================================================
+F. QUY TRÌNH KHI PHASE CHƯA BẮT ĐẦU
+==================================================
+
+Điều kiện:
+
+- Working tree sạch.
+- Phase trước hoàn thành Exit Checklist.
+- develop tồn tại.
+- develop đã đồng bộ remote.
+- Phase branch chưa tồn tại.
+
+Chuẩn bị hoặc thực hiện theo docs/git-phases.md:
+
+git switch develop
+git pull --ff-only origin develop
+git switch -c <phase-branch>
+git push -u origin <phase-branch>
+
+Trước Git write operation, báo cáo:
+
+## Start phase Git plan
+
+- Phase number:
+- Phase name:
+- Base branch:
+- Target phase branch:
+- Working tree status:
+- Previous phase status:
+- Remote status:
+- Commands:
+- Risks:
+
+Nếu prompt được chạy trong chế độ được phép thao tác Git, thực hiện sau khi kế hoạch hợp lệ.
+
+Nếu không có quyền hoặc cần xác nhận, dừng trước Git write operation.
+
+==================================================
+G. QUY TRÌNH TẠO FEATURE BRANCH
+==================================================
+
+Khi phase branch đã tồn tại và có checklist cần làm:
+
+1. Chọn một nhóm checklist có cùng trách nhiệm.
+2. Xác định feature slug ngắn gọn.
+3. Tạo feature branch từ phase branch.
+
+Tên:
+
+feature/p<phase-number>-<feature-slug>
+
+Ví dụ dạng tổng quát:
+
+feature/p01-email-verification
+feature/p02-product-crud
+fix/p03-negative-stock
+
+Lệnh:
+
+git switch <phase-branch>
+git pull --ff-only origin <phase-branch>
+git switch -c <feature-branch>
+git push -u origin <feature-branch>
+
+Không tạo feature branch từ develop khi phase branch đã tồn tại.
+
+Báo:
+
+## Feature branch plan
+
+- Phase branch:
+- Selected checklist:
+- Feature branch:
+- Base commit:
+- Commands:
+- Risks:
+
+==================================================
+H. QUY TRÌNH COMMIT
+==================================================
+
+Trước commit:
+
+1. Kiểm tra branch không phải main hoặc develop.
+2. Kiểm tra git status.
+3. Kiểm tra diff.
+4. Kiểm tra secret.
+5. Chạy build/test/lint/typecheck phù hợp.
+6. Chỉ chọn file thuộc cùng một thay đổi logic.
+7. Tách commit nếu có nhiều mục đích khác nhau.
+
+Conventional Commits:
+
+feat(scope): description
+fix(scope): description
+refactor(scope): description
+test(scope): description
+docs(scope): description
+build(scope): description
+ci(scope): description
+chore(scope): description
+perf(scope): description
+
+Quy tắc:
+
+- Message bằng tiếng Anh.
+- Description ở imperative mood.
+- Không dấu chấm cuối.
+- Không dùng:
+  - update code
+  - fix bug
+  - changes
+  - done
+  - final
+- Một commit chỉ phục vụ một thay đổi logic.
+
+Trước commit, báo:
+
+## Commit plan
+
+- Branch:
+- Changed files:
+- Files selected:
+- Files excluded:
+- Validation results:
+- Proposed commit:
+- Reason for grouping:
+
+Sau đó stage chính xác và commit nếu được phép.
+
+==================================================
+I. QUY TRÌNH PUSH
+==================================================
+
+Trước push:
+
+1. Working tree không có lỗi nghiêm trọng.
+2. Commit hợp lệ.
+3. Test liên quan thành công.
+4. Upstream đúng.
+5. Không force push.
+
+Lệnh:
+
+git push
+
+Hoặc lần đầu:
+
+git push -u origin <current-branch>
+
+Báo:
+
+- Commit hash.
+- Branch.
+- Remote.
+- Push result.
+
+==================================================
+J. QUY TRÌNH FEATURE PR
+==================================================
+
+Khi feature hoàn tất:
+
+Base branch:
+
+<phase-branch>
+
+Compare branch:
+
+<feature-branch>
+
+Kiểm tra:
+
+- Working tree sạch.
+- Commit đã push.
+- Build thành công.
+- Test thành công.
+- Frontend lint/typecheck/build thành công.
+- Migration hợp lệ.
+- Không có secret.
+- Acceptance criteria đạt.
+- Checklist tương ứng có bằng chứng.
+
+Chuẩn bị PR:
+
+## Summary
+- ...
+
+## Phase
+- Phase number:
+- Phase name:
+
+## Checklist covered
+- ...
+
+## Changes
+- Backend:
+- Frontend:
+- Database:
+- Tests:
+
+## Business rules
+- ...
+
+## Validation
+- [ ] Backend build
+- [ ] Backend tests
+- [ ] Architecture tests
+- [ ] Frontend lint
+- [ ] Frontend typecheck
+- [ ] Frontend tests
+- [ ] Frontend production build
+- [ ] Migration verified
+- [ ] Responsive verified
+- [ ] No secret committed
+
+## Known issues
+- ...
+
+Không tự merge PR nếu chưa được yêu cầu.
+
+==================================================
+K. QUY TRÌNH KẾT THÚC PHASE
+==================================================
+
+Khi các feature đã merge vào phase branch:
+
+1. Switch phase branch.
+2. Pull remote.
+3. Kiểm tra toàn bộ checklist.
+4. Chạy toàn bộ validation.
+5. Kiểm tra migration trên database sạch.
+6. Kiểm tra seed idempotent.
+7. Kiểm tra responsive.
+8. Kiểm tra không còn blocker Critical/High.
+9. Kiểm tra CI.
+10. Chuẩn bị PR từ phase branch vào develop.
+
+Báo:
+
+## Phase readiness report
+
+- Phase:
+- Phase branch:
+- Target branch: develop
+- Checklist completed:
+- Checklist pending:
+- Backend build:
+- Backend tests:
+- Architecture tests:
+- Frontend lint:
+- Frontend typecheck:
+- Frontend tests:
+- Frontend build:
+- Migration status:
+- Seed status:
+- Responsive status:
+- CI status:
+- Known issues:
+- Recommended version/tag:
+
+Không merge nếu Exit Checklist chưa hoàn thành.
+
+==================================================
+L. QUY TRÌNH TAG
+==================================================
+
+Chỉ tạo tag khi:
+
+1. Phase đã merge vào develop.
+2. develop đồng bộ origin/develop.
+3. CI của merge commit thành công.
+4. Working tree sạch.
+5. Tag đúng docs/release-versioning.md.
+6. Tag chưa tồn tại local hoặc remote.
+
+Chuẩn bị:
+
+git switch develop
+git pull --ff-only origin develop
+git tag -a <tag> -m "<tag-message>"
+git push origin <tag>
+
+Không:
+
+- Ghi đè tag.
+- Di chuyển tag.
+- Force push tag.
+- Tạo tag từ phase branch chưa merge.
+
+Báo:
+
+## Tag plan
+
+- Phase:
+- Commit:
+- Version:
+- Tag:
+- Message:
+- CI status:
+- Existing tag check:
+- Commands:
+
+Chỉ tạo tag khi mọi điều kiện đạt và được phép.
+
+==================================================
+M. BÁO CÁO CUỐI
+==================================================
+
+Sau mỗi lần chạy prompt, trả về:
+
+## Git phase report
+
+### Phase
+- Number:
+- Name:
+- Expected phase branch:
+
+### Current repository state
+- Current branch:
+- Working tree:
+- Local/remote sync:
+- Latest commit:
+- Existing tags:
+
+### Detected workflow state
+- Phase not started / feature in progress / ready to commit /
+  ready to push / ready for PR / ready for phase merge /
+  ready for tag / blocked
+
+### Actions performed
+- ...
+
+### Actions not performed
+- ...
+
+### Validation
+- Build:
+- Tests:
+- Lint:
+- Typecheck:
+- CI:
+
+### Recommended next action
+- ...
+
+### Proposed commands
+
+...
+
+Không tự chuyển sang phase tiếp theo.
+Không bỏ qua lỗi.
+Không dùng lệnh Git phá hủy.
