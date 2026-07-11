@@ -1,0 +1,25 @@
+:root {
+  --color-primary: #256f3a;
+  --color-primary-strong: #18562b;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f7f5;
+  --color-text: #1f2937;
+  --color-text-muted: #667085;
+  --color-border: #d8ded9;
+  --color-danger: #b42318;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+
+  --shadow-card: 0 0.25rem 1rem rgb(0 0 0 / 8%);
+
+  --content-max-width: 75rem;
+  --touch-target-size: 2.75rem;
+}

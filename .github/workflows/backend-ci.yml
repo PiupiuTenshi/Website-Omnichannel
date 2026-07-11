@@ -1,0 +1,33 @@
+name: backend-ci
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  push:
+    branches:
+      - main
+      - develop
+      - 'phase/**'
+      - 'release/**'
+      - 'hotfix/**'
+    paths:
+      - 'backend/**'
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore backend/GroceryStore.sln
+      - name: Build
+        run: dotnet build backend/GroceryStore.sln --configuration Release --no-restore
+      - name: Format
+        run: dotnet format backend/GroceryStore.sln --verify-no-changes --no-restore
+      - name: Test
+        run: dotnet test backend/GroceryStore.sln --configuration Release --no-build
