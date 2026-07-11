@@ -22,7 +22,7 @@ appsettings.Development.json
 # Local Markdown documentation
 # Theo yêu cầu dự án: chỉ README.md ở root được commit.
 # docs ko dc xuat hien trong repo
-.docs/
+docs/
 *.md
 !/README.md
 
