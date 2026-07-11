@@ -1,0 +1,18 @@
+TAP HOA CHI TO - FINAL PROJECT PACKAGE
+
+Main contents:
+- Backend clean/layered architecture scaffold
+- Frontend feature-based React + TypeScript + plain CSS scaffold
+- Database seed.sql
+- Phase checklists and phase-based Git workflow
+- Naming convention, project rules and Codex execution guide
+- GitHub Actions CI workflows
+- Final system analysis DOCX
+- ERD and deployment diagrams
+
+Codex entry point:
+1. README.md
+2. docs/AGENT.md
+3. docs/codex-execution-guide.md
+4. docs/phases.md
+5. docs/git-phases.md
