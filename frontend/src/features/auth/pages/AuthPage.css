@@ -127,3 +127,33 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.auth-tabs {
+  display: flex;
+  background: #f4f4f5;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  margin-bottom: var(--space-md);
+  gap: 0.25rem;
+  border: 1px solid var(--color-border);
+}
+
+.auth-tabs__tab {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  border-radius: calc(var(--radius-sm) - 2px);
+  padding: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  text-align: center;
+}
+
+.auth-tabs__tab--active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}

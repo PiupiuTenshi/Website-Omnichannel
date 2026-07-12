@@ -8,6 +8,7 @@ import "./AuthPage.css";
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [regMethod, setRegMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -18,8 +19,13 @@ export function RegisterPage() {
     event.preventDefault();
     setErrorMessage("");
 
-    if (!email.trim() && !phoneNumber.trim()) {
-      setErrorMessage("Provide at least an email address or phone number.");
+    if (regMethod === "email" && !email.trim()) {
+      setErrorMessage("Please enter your email address.");
+      return;
+    }
+
+    if (regMethod === "phone" && !phoneNumber.trim()) {
+      setErrorMessage("Please enter your phone number.");
       return;
     }
 
@@ -30,7 +36,11 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await register({ email, phoneNumber, password });
+      const response = await register({
+        email: regMethod === "email" ? email : "",
+        phoneNumber: regMethod === "phone" ? phoneNumber : "",
+        password
+      });
       navigate(`/verify?userId=${encodeURIComponent(response.userId)}`, { replace: true });
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "Unable to create your account right now.");
@@ -44,23 +54,82 @@ export function RegisterPage() {
       <div className="auth-card">
         <header className="auth-card__header">
           <h1 className="auth-card__title" id="register-heading">Create account</h1>
-          <p className="auth-card__description">Enter an email address or phone number. You can enter both.</p>
+          <p className="auth-card__description">Choose your registration method below.</p>
         </header>
+
+        <div className="auth-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={regMethod === "email"}
+            className={`auth-tabs__tab ${regMethod === "email" ? "auth-tabs__tab--active" : ""}`}
+            onClick={() => {
+              setRegMethod("email");
+              setPhoneNumber("");
+              setErrorMessage("");
+            }}
+          >
+            Email
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={regMethod === "phone"}
+            className={`auth-tabs__tab ${regMethod === "phone" ? "auth-tabs__tab--active" : ""}`}
+            onClick={() => {
+              setRegMethod("phone");
+              setEmail("");
+              setErrorMessage("");
+            }}
+          >
+            Phone Number
+          </button>
+        </div>
+
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          <label className="auth-form__field" htmlFor="register-email">
-            <span>Email address</span>
-            <input className="auth-form__input" id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-          </label>
-          <label className="auth-form__field" htmlFor="register-phone">
-            <span>Phone number</span>
-            <input className="auth-form__input" id="register-phone" type="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} autoComplete="tel" />
-          </label>
+          {regMethod === "email" ? (
+            <label className="auth-form__field" htmlFor="register-email">
+              <span>Email address</span>
+              <input
+                className="auth-form__input"
+                id="register-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
+          ) : (
+            <label className="auth-form__field" htmlFor="register-phone">
+              <span>Phone number</span>
+              <input
+                className="auth-form__input"
+                id="register-phone"
+                type="tel"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                autoComplete="tel"
+                required
+              />
+            </label>
+          )}
           <label className="auth-form__field" htmlFor="register-password">
             <span>Password</span>
-            <input className="auth-form__input" id="register-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" />
+            <input
+              className="auth-form__input"
+              id="register-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              required
+            />
           </label>
           {errorMessage && <p className="auth-form__message" role="alert">{errorMessage}</p>}
-          <button className="auth-form__submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Creating account…" : "Create account"}</button>
+          <button className="auth-form__submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating account…" : "Create account"}
+          </button>
         </form>
         <p className="auth-card__footer">Already have an account? <Link to="/login">Sign in</Link>.</p>
       </div>
