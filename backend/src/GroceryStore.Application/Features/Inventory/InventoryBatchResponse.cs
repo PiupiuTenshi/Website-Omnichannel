@@ -1,0 +1,5 @@
+using GroceryStore.Domain.Enums;
+
+namespace GroceryStore.Application.Features.Inventory;
+
+public sealed record InventoryBatchResponse(Guid InventoryBatchId, Guid ProductVariantId, Guid? SupplierId, decimal InitialQuantity, decimal AvailableQuantity, decimal UnitCost, DateTime ReceivedAtUtc, DateTime? ManufacturedAtUtc, DateTime? ExpiresAtUtc, InventoryBatchStatus Status);

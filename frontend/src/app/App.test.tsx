@@ -7,6 +7,6 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("link", { name: "Tạp hóa chị Tỏ" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Rau tươi và nhu yếu phẩm mỗi ngày" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nông sản sạch & Nhu yếu phẩm tươi ngon mỗi ngày" })).toBeInTheDocument();
   });
 });

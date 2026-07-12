@@ -1,12 +1,22 @@
 :root {
   --color-primary: #256f3a;
   --color-primary-strong: #18562b;
+  --color-primary-light: #e6f4ea;
   --color-surface: #ffffff;
   --color-surface-muted: #f5f7f5;
+  --color-surface-hover: #eaf2eb;
   --color-text: #1f2937;
   --color-text-muted: #667085;
   --color-border: #d8ded9;
   --color-danger: #b42318;
+
+  /* Grocery Category Palette */
+  --color-cat-veggies: #256f3a;      /* Fresh green */
+  --color-cat-fruits: #eaaa08;       /* Amber gold */
+  --color-cat-meat: #d92d20;         /* Coral red */
+  --color-cat-dairy: #0086c9;        /* Milk blue */
+  --color-cat-beverages: #7a5af8;    /* Grape violet */
+  --color-cat-snacks: #f79009;       /* Orange snack */
 
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -18,7 +28,8 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
 
-  --shadow-card: 0 0.25rem 1rem rgb(0 0 0 / 8%);
+  --shadow-card: 0 4px 20px rgb(24 86 43 / 6%);
+  --shadow-hover: 0 12px 30px rgb(24 86 43 / 12%);
 
   --content-max-width: 75rem;
   --touch-target-size: 2.75rem;

@@ -26,6 +26,16 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
 
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+
+    public DbSet<ProductSupplier> ProductSuppliers => Set<ProductSupplier>();
+
+    public DbSet<InventoryBatch> InventoryBatches => Set<InventoryBatch>();
+
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+
+    public DbSet<ExpiryPolicy> ExpiryPolicies => Set<ExpiryPolicy>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -35,6 +45,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureRefreshSessions(modelBuilder);
         ConfigureStoreSettings(modelBuilder);
         ConfigureCatalog(modelBuilder);
+        ConfigureInventory(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -185,6 +196,83 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasOne<Product>()
                 .WithMany(product => product.Images)
                 .HasForeignKey(image => image.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureInventory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.HasKey(supplier => supplier.SupplierId);
+            entity.Property(supplier => supplier.Name).HasMaxLength(200).IsRequired();
+            entity.Property(supplier => supplier.ContactName).HasMaxLength(150);
+            entity.Property(supplier => supplier.PhoneNumber).HasMaxLength(20);
+            entity.Property(supplier => supplier.Email).HasMaxLength(256);
+            entity.Property(supplier => supplier.Address).HasMaxLength(500);
+            entity.HasIndex(supplier => supplier.Name);
+        });
+
+        modelBuilder.Entity<ProductSupplier>(entity =>
+        {
+            entity.HasKey(productSupplier => new { productSupplier.ProductId, productSupplier.SupplierId });
+            entity.Property(productSupplier => productSupplier.SupplierProductCode).HasMaxLength(100);
+            entity.HasIndex(productSupplier => productSupplier.SupplierId);
+            entity.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(productSupplier => productSupplier.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Supplier>()
+                .WithMany()
+                .HasForeignKey(productSupplier => productSupplier.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InventoryBatch>(entity =>
+        {
+            entity.HasKey(batch => batch.InventoryBatchId);
+            entity.Property(batch => batch.InitialQuantity).HasPrecision(18, 3);
+            entity.Property(batch => batch.AvailableQuantity).HasPrecision(18, 3);
+            entity.Property(batch => batch.UnitCost).HasPrecision(18, 2);
+            entity.Property(batch => batch.RowVersion).IsRowVersion();
+            entity.HasIndex(batch => new { batch.ProductVariantId, batch.ExpiresAtUtc, batch.Status });
+            entity.HasIndex(batch => batch.SupplierId);
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(batch => batch.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Supplier>()
+                .WithMany()
+                .HasForeignKey(batch => batch.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint("CK_InventoryBatches_NonNegativeQuantity", "[AvailableQuantity] >= 0 AND [InitialQuantity] > 0"));
+        });
+
+        modelBuilder.Entity<InventoryTransaction>(entity =>
+        {
+            entity.HasKey(transaction => transaction.InventoryTransactionId);
+            entity.Property(transaction => transaction.QuantityDelta).HasPrecision(18, 3);
+            entity.Property(transaction => transaction.Reason).HasMaxLength(500).IsRequired();
+            entity.HasIndex(transaction => new { transaction.InventoryBatchId, transaction.OccurredAtUtc });
+            entity.HasIndex(transaction => new { transaction.ProductVariantId, transaction.OccurredAtUtc });
+            entity.HasOne<InventoryBatch>()
+                .WithMany()
+                .HasForeignKey(transaction => transaction.InventoryBatchId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(transaction => transaction.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ExpiryPolicy>(entity =>
+        {
+            entity.HasKey(policy => policy.ExpiryPolicyId);
+            entity.Property(policy => policy.Name).HasMaxLength(150).IsRequired();
+            entity.HasIndex(policy => policy.ProductVariantId).IsUnique();
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(policy => policy.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
