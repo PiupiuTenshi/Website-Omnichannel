@@ -41,8 +41,14 @@
 }
 
 .public-layout__main {
-  display: flex;
+  display: block;
   flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.public-layout__main > * {
+  min-width: 0;
 }
 
 .public-layout__footer {

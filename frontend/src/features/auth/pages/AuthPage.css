@@ -1,12 +1,14 @@
 .auth-page {
   display: grid;
-  width: 100%;
+  min-width: 0;
   align-content: center;
   padding-block: clamp(2rem, 8vw, 5rem);
 }
 
 .auth-card {
   width: min(100%, 34rem);
+  min-width: 0;
+  box-sizing: border-box;
   margin-inline: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -35,16 +37,20 @@
 
 .auth-form {
   display: grid;
+  min-width: 0;
   gap: var(--space-md);
 }
 
 .auth-form__field {
   display: grid;
+  min-width: 0;
   gap: var(--space-xs);
 }
 
 .auth-form__input {
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);

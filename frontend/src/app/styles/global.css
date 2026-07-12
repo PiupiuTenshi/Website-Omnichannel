@@ -18,7 +18,8 @@ select {
 }
 
 .app-container {
-  width: min(100% - 2rem, var(--content-max-width));
+  width: calc(100% - 2rem);
+  max-width: var(--content-max-width);
   margin-inline: auto;
 }
 

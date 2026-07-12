@@ -1,9 +1,10 @@
 .store-settings-page {
-  width: 100%;
+  min-width: 0;
   padding-block: clamp(2rem, 8vw, 5rem);
 }
 
 .store-settings-page__card {
+  min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
