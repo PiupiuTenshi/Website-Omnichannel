@@ -16,6 +16,16 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<StoreContactNumber> StoreContactNumbers => Set<StoreContactNumber>();
 
+    public DbSet<Category> Categories => Set<Category>();
+
+    public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
+
+    public DbSet<Product> Products => Set<Product>();
+
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -24,6 +34,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureRoles(modelBuilder);
         ConfigureRefreshSessions(modelBuilder);
         ConfigureStoreSettings(modelBuilder);
+        ConfigureCatalog(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -91,6 +102,90 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(number => number.PhoneNumber).HasMaxLength(15).IsRequired();
             entity.HasIndex(number => number.StoreSettingsId);
             entity.HasIndex(number => new { number.StoreSettingsId, number.PhoneNumber }).IsUnique();
+        });
+    }
+
+    private static void ConfigureCatalog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(category => category.CategoryId);
+            entity.Property(category => category.Name).HasMaxLength(150).IsRequired();
+            entity.Property(category => category.Slug).HasMaxLength(160).IsRequired();
+            entity.HasIndex(category => category.Slug).IsUnique();
+            entity.HasIndex(category => category.ParentCategoryId);
+            entity.HasOne<Category>()
+                .WithMany()
+                .HasForeignKey(category => category.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UnitOfMeasure>(entity =>
+        {
+            entity.HasKey(unitOfMeasure => unitOfMeasure.UnitOfMeasureId);
+            entity.Property(unitOfMeasure => unitOfMeasure.Code).HasMaxLength(20).IsRequired();
+            entity.Property(unitOfMeasure => unitOfMeasure.Name).HasMaxLength(100).IsRequired();
+            entity.HasIndex(unitOfMeasure => unitOfMeasure.Code).IsUnique();
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_UnitsOfMeasure_DecimalScale",
+                "([AllowsDecimal] = 1 AND [DecimalScale] BETWEEN 1 AND 3) OR ([AllowsDecimal] = 0 AND [DecimalScale] = 0)"));
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(product => product.ProductId);
+            entity.Property(product => product.Name).HasMaxLength(250).IsRequired();
+            entity.Property(product => product.Slug).HasMaxLength(260).IsRequired();
+            entity.Property(product => product.Description).HasMaxLength(4000);
+            entity.HasIndex(product => product.Slug).IsUnique();
+            entity.HasIndex(product => product.CategoryId);
+            entity.HasIndex(product => product.UnitOfMeasureId);
+            entity.HasOne(product => product.Category)
+                .WithMany()
+                .HasForeignKey(product => product.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(product => product.UnitOfMeasure)
+                .WithMany()
+                .HasForeignKey(product => product.UnitOfMeasureId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductVariant>(entity =>
+        {
+            entity.HasKey(variant => variant.ProductVariantId);
+            entity.Property(variant => variant.Name).HasMaxLength(150).IsRequired();
+            entity.Property(variant => variant.Sku).HasMaxLength(64).IsRequired();
+            entity.Property(variant => variant.Barcode).HasMaxLength(64);
+            entity.Property(variant => variant.SellingPrice).HasPrecision(18, 2).IsRequired();
+            entity.Property(variant => variant.CompareAtPrice).HasPrecision(18, 2);
+            entity.Property(variant => variant.RowVersion).IsRowVersion();
+            entity.HasIndex(variant => variant.ProductId);
+            entity.HasIndex(variant => variant.Sku).IsUnique();
+            entity.HasIndex(variant => variant.Barcode).IsUnique().HasFilter("[Barcode] IS NOT NULL");
+            entity.HasOne<Product>()
+                .WithMany(product => product.Variants)
+                .HasForeignKey(variant => variant.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_ProductVariants_ValidPrices",
+                "[SellingPrice] > 0 AND ([CompareAtPrice] IS NULL OR [CompareAtPrice] > [SellingPrice])"));
+        });
+
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            entity.HasKey(image => image.ProductImageId);
+            entity.Property(image => image.ObjectKey).HasMaxLength(500).IsRequired();
+            entity.Property(image => image.ContentType).HasMaxLength(100).IsRequired();
+            entity.HasIndex(image => new { image.ProductId, image.SortOrder })
+                .HasDatabaseName("IX_ProductImages_ProductId_SortOrder");
+            entity.HasIndex(image => image.ProductId)
+                .HasDatabaseName("UX_ProductImages_Primary")
+                .IsUnique()
+                .HasFilter("[IsPrimary] = 1");
+            entity.HasOne<Product>()
+                .WithMany(product => product.Images)
+                .HasForeignKey(image => image.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

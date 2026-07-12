@@ -39,6 +39,7 @@ public sealed class ExceptionHandlingMiddleware
             {
                 BusinessRuleViolationException => StatusCodes.Status400BadRequest,
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                KeyNotFoundException => StatusCodes.Status404NotFound,
                 _ => StatusCodes.Status500InternalServerError
             };
             context.Response.ContentType = "application/json";
