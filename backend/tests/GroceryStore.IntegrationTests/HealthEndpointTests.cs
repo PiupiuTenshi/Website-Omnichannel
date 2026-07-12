@@ -14,4 +14,14 @@ public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory) 
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task StoreSettingsEndpoint_RejectsAnonymousRequestsAsync()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/store-settings");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }
