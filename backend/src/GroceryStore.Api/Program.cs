@@ -1,10 +1,16 @@
 using GroceryStore.Application;
+using GroceryStore.Api.Configuration;
 using GroceryStore.Api.Middlewares;
 using GroceryStore.Infrastructure;
 using GroceryStore.Persistence;
 using GroceryStore.Persistence.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    EnvironmentFileConfiguration.AddLocalEnvironmentFile(builder.Configuration, builder.Environment.ContentRootPath);
+}
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -16,6 +22,32 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "GroceryStore API",
+        Version = "v1"
+    });
+    
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
+        Description = "Enter JWT Bearer token."
+    });
+    
+    options.AddSecurityRequirement(document => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", document),
+            new List<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -25,6 +57,11 @@ app.UseCors("Frontend");
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "GroceryStore API v1");
+    });
 }
 
 app.UseAuthentication();
@@ -32,11 +69,17 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled"))
+var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
+if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdentitySeedCommand)
 {
     await using var scope = app.Services.CreateAsyncScope();
     var demoIdentitySeeder = scope.ServiceProvider.GetRequiredService<DemoIdentitySeeder>();
     await demoIdentitySeeder.SeedAsync(CancellationToken.None);
+}
+
+if (isDemoIdentitySeedCommand)
+{
+    return;
 }
 
 app.Run();
