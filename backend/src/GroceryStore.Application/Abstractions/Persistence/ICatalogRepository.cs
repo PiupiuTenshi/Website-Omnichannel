@@ -48,5 +48,9 @@ public interface ICatalogRepository
 
     Task AddProductAsync(Product product, CancellationToken cancellationToken);
 
+    Task AddProductImageAsync(ProductImage productImage, CancellationToken cancellationToken);
+
+    void RemoveProductImage(ProductImage productImage);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
