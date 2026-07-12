@@ -85,7 +85,7 @@
   min-height: var(--touch-target-size);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding-left: var(--space-lg);
+  padding-left: 2.5rem;
   padding-right: var(--space-md);
   font-size: 0.9375rem;
   transition: all 0.2s ease-in-out;
