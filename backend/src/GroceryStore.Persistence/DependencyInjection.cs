@@ -1,4 +1,10 @@
+using GroceryStore.Application.Abstractions.Authentication;
+using GroceryStore.Application.Abstractions.Persistence;
+using GroceryStore.Persistence.Authentication;
 using GroceryStore.Persistence.Context;
+using GroceryStore.Persistence.Repositories;
+using GroceryStore.Persistence.Seeding;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,10 +19,32 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        if (!string.IsNullOrWhiteSpace(connectionString))
+        services.AddDbContext<ApplicationDbContext>(options =>
         {
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-        }
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                options.UseSqlServer(connectionString);
+            }
+        });
+
+        services.AddIdentityCore<ApplicationUser>(options =>
+            {
+                options.User.RequireUniqueEmail = false;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+            })
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+        services.AddScoped<IIdentityAccountService, IdentityAccountService>();
+        services.AddScoped<IRefreshSessionStore, RefreshSessionStore>();
+        services.AddScoped<IStoreSettingsRepository, StoreSettingsRepository>();
+        services.Configure<DemoIdentityOptions>(configuration.GetSection(DemoIdentityOptions.SECTION_NAME));
+        services.AddScoped<DemoIdentitySeeder>();
 
         return services;
     }
