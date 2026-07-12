@@ -1,0 +1,123 @@
+.auth-page {
+  display: grid;
+  width: 100%;
+  align-content: center;
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.auth-card {
+  width: min(100%, 34rem);
+  margin-inline: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+
+.auth-card__header {
+  margin-bottom: var(--space-lg);
+}
+
+.auth-card__title,
+.auth-card__description {
+  margin: 0;
+}
+
+.auth-card__title {
+  font-size: clamp(1.6rem, 6vw, 2.25rem);
+}
+
+.auth-card__description {
+  margin-top: var(--space-sm);
+  color: var(--color-text-muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.auth-form__field {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.auth-form__input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  padding: 0.625rem 0.75rem;
+}
+
+.auth-form__input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border-color: var(--color-primary);
+}
+
+.auth-form__message {
+  margin: 0;
+  border-radius: var(--radius-sm);
+  background: #fef3f2;
+  color: var(--color-danger);
+  padding: var(--space-sm);
+}
+
+.auth-form__message--success {
+  background: #ecfdf3;
+  color: var(--color-primary-strong);
+}
+
+.auth-form__submit,
+.auth-card__link {
+  display: inline-flex;
+  min-height: var(--touch-target-size);
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  cursor: pointer;
+  font-weight: 700;
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+}
+
+.auth-form__submit:hover,
+.auth-form__submit:focus-visible,
+.auth-card__link:hover,
+.auth-card__link:focus-visible {
+  background: var(--color-primary-strong);
+}
+
+.auth-form__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.auth-card__footer {
+  margin: var(--space-lg) 0 0;
+  color: var(--color-text-muted);
+}
+
+.auth-card__footer a {
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+
+.auth-verify-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 48rem) {
+  .auth-card {
+    padding: var(--space-xl);
+  }
+
+  .auth-verify-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -16,12 +16,26 @@
 .public-layout__header-content {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .public-layout__brand {
   display: inline-flex;
   align-items: center;
   color: var(--color-primary-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-layout__navigation a,
+.public-layout__navigation button {
+  display: inline-flex;
+  min-height: var(--touch-target-size);
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-strong);
+  cursor: pointer;
   font-weight: 700;
   text-decoration: none;
 }
