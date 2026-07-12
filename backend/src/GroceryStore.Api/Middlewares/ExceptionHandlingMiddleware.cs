@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using GroceryStore.Api.Contracts;
+using GroceryStore.Application.Exceptions;
 
 namespace GroceryStore.Api.Middlewares;
 
@@ -34,11 +35,19 @@ public sealed class ExceptionHandlingMiddleware
                 throw;
             }
 
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.StatusCode = exception switch
+            {
+                BusinessRuleViolationException => StatusCodes.Status400BadRequest,
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status500InternalServerError
+            };
             context.Response.ContentType = "application/json";
 
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
-            var response = new ErrorResponse("An unexpected error occurred.", context.Response.StatusCode, traceId);
+            var message = context.Response.StatusCode == StatusCodes.Status500InternalServerError
+                ? "An unexpected error occurred."
+                : exception.Message;
+            var response = new ErrorResponse(message, context.Response.StatusCode, traceId);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, JSON_OPTIONS));
         }
     }
