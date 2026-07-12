@@ -29,7 +29,7 @@ builder.Services.AddSwaggerGen(options =>
         Title = "GroceryStore API",
         Version = "v1"
     });
-    
+
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -39,7 +39,7 @@ builder.Services.AddSwaggerGen(options =>
         In = Microsoft.OpenApi.ParameterLocation.Header,
         Description = "Enter JWT Bearer token."
     });
-    
+
     options.AddSecurityRequirement(document => new Microsoft.OpenApi.OpenApiSecurityRequirement
     {
         {
