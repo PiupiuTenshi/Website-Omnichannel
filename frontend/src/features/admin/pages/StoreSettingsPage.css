@@ -1,0 +1,112 @@
+.store-settings-page {
+  width: 100%;
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.store-settings-page__card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+
+.store-settings-page__header {
+  margin-bottom: var(--space-lg);
+}
+
+.store-settings-page__title,
+.store-settings-page__description {
+  margin: 0;
+}
+
+.store-settings-page__description {
+  margin-top: var(--space-sm);
+  color: var(--color-text-muted);
+}
+
+.store-settings-form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.store-settings-form__field {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.store-settings-form__input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.75rem;
+}
+
+.store-settings-form__hotline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+}
+
+.store-settings-form__button {
+  min-height: var(--touch-target-size);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-surface);
+  cursor: pointer;
+  font-weight: 700;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.store-settings-form__button--secondary {
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+}
+
+.store-settings-form__button--danger {
+  border-color: var(--color-danger);
+  background: var(--color-surface);
+  color: var(--color-danger);
+}
+
+.store-settings-form__notice {
+  margin: 0;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+}
+
+.store-settings-form__notice--error {
+  background: #fef3f2;
+  color: var(--color-danger);
+}
+
+.store-settings-form__notice--success {
+  background: #ecfdf3;
+  color: var(--color-primary-strong);
+}
+
+.store-settings-form__toggle {
+  display: flex;
+  min-height: var(--touch-target-size);
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 48rem) {
+  .store-settings-page__card {
+    padding: var(--space-xl);
+  }
+
+  .store-settings-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .store-settings-form__field--wide,
+  .store-settings-form__hotlines,
+  .store-settings-form__notice,
+  .store-settings-form__actions,
+  .store-settings-form__toggle {
+    grid-column: 1 / -1;
+  }
+}
