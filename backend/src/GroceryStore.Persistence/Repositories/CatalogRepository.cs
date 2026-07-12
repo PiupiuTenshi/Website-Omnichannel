@@ -187,6 +187,16 @@ public sealed class CatalogRepository : ICatalogRepository
         return applicationDbContext.Products.AddAsync(product, cancellationToken).AsTask();
     }
 
+    public Task AddProductImageAsync(ProductImage productImage, CancellationToken cancellationToken)
+    {
+        return applicationDbContext.ProductImages.AddAsync(productImage, cancellationToken).AsTask();
+    }
+
+    public void RemoveProductImage(ProductImage productImage)
+    {
+        applicationDbContext.ProductImages.Remove(productImage);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return applicationDbContext.SaveChangesAsync(cancellationToken);

@@ -10,7 +10,6 @@ using GroceryStore.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace GroceryStore.Infrastructure;
@@ -25,22 +24,14 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SECTION_NAME));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SECTION_NAME));
         services.Configure<ImageStorageOptions>(configuration.GetSection(ImageStorageOptions.SECTION_NAME));
-        services.Configure<R2Options>(configuration.GetSection(R2Options.SECTION_NAME));
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddScoped<ISmsOtpSender, MockSmsOtpSender>();
         services.AddScoped<IEmailSender>(_ => string.Equals(smtpOptions.Provider, "Smtp", StringComparison.OrdinalIgnoreCase)
             ? new SmtpEmailSender(Microsoft.Extensions.Options.Options.Create(smtpOptions))
             : new MockEmailSender(_.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MockEmailSender>>()));
         services.AddSingleton<ProductImageTransformer>();
-        services.AddSingleton<IImageStorage>(serviceProvider =>
-        {
-            var imageStorageOptions = serviceProvider.GetRequiredService<IOptions<ImageStorageOptions>>().Value;
-            return string.Equals(imageStorageOptions.Provider, "R2", StringComparison.OrdinalIgnoreCase)
-                ? serviceProvider.GetRequiredService<R2ImageStorage>()
-                : serviceProvider.GetRequiredService<LocalImageStorage>();
-        });
+        services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddSingleton<LocalImageStorage>();
-        services.AddSingleton<R2ImageStorage>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

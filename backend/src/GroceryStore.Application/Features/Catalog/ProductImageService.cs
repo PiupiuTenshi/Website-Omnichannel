@@ -41,6 +41,7 @@ public sealed class ProductImageService
                 storedImage.Height,
                 sortOrder,
                 isPrimary || product.Images.Count == 0);
+            await catalogRepository.AddProductImageAsync(image, cancellationToken);
             await catalogRepository.SaveChangesAsync(cancellationToken);
             return new ProductImageUploadResponse(
                 image.ProductImageId,
@@ -73,6 +74,7 @@ public sealed class ProductImageService
         var product = await catalogRepository.GetProductAsync(productId, true, cancellationToken)
             ?? throw new KeyNotFoundException("Product was not found.");
         var image = product.RemoveImage(productImageId);
+        catalogRepository.RemoveProductImage(image);
         await catalogRepository.SaveChangesAsync(cancellationToken);
         await imageStorage.DeleteAsync(image.ObjectKey, cancellationToken);
     }
