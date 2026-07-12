@@ -72,9 +72,21 @@ app.MapHealthChecks("/health");
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
 if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdentitySeedCommand)
 {
-    await using var scope = app.Services.CreateAsyncScope();
-    var demoIdentitySeeder = scope.ServiceProvider.GetRequiredService<DemoIdentitySeeder>();
-    await demoIdentitySeeder.SeedAsync(CancellationToken.None);
+    try
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        var demoIdentitySeeder = scope.ServiceProvider.GetRequiredService<DemoIdentitySeeder>();
+        await demoIdentitySeeder.SeedAsync(CancellationToken.None);
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding demo identities.");
+        if (isDemoIdentitySeedCommand)
+        {
+            throw;
+        }
+    }
 }
 
 if (isDemoIdentitySeedCommand)
