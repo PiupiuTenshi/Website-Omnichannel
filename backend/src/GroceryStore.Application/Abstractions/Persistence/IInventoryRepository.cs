@@ -16,6 +16,10 @@ public interface IInventoryRepository
 
     Task<IReadOnlyList<InventoryBatch>> GetBatchesAsync(Guid? productVariantId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<DetailedInventoryBatch>> GetDetailedBatchesAsync(Guid? productVariantId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<LowStockInventoryItem>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken);
+
     Task AddSupplierAsync(Supplier supplier, CancellationToken cancellationToken);
 
     Task AddProductSupplierAsync(ProductSupplier productSupplier, CancellationToken cancellationToken);

@@ -82,8 +82,41 @@ public sealed class InventoryService
 
     public async Task<IReadOnlyList<InventoryBatchResponse>> GetBatchesAsync(Guid? productVariantId, CancellationToken cancellationToken)
     {
-        var batches = await inventoryRepository.GetBatchesAsync(productVariantId, cancellationToken);
-        return batches.Select(ToResponse).ToArray();
+        var batches = await inventoryRepository.GetDetailedBatchesAsync(productVariantId, cancellationToken);
+        return batches.Select(batch => new InventoryBatchResponse(
+            batch.InventoryBatchId,
+            batch.ProductVariantId,
+            batch.SupplierId,
+            batch.InitialQuantity,
+            batch.AvailableQuantity,
+            batch.UnitCost,
+            batch.ReceivedAtUtc,
+            batch.ManufacturedAtUtc,
+            batch.ExpiresAtUtc,
+            batch.Status,
+            batch.ProductName,
+            batch.VariantName,
+            batch.Sku,
+            batch.UnitCode,
+            batch.SupplierName)).ToArray();
+    }
+
+    public async Task<IReadOnlyList<LowStockItemResponse>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken)
+    {
+        if (minimumAvailableQuantity < 0)
+        {
+            throw new BusinessRuleViolationException("Minimum available quantity cannot be negative.");
+        }
+
+        var items = await inventoryRepository.GetLowStockItemsAsync(minimumAvailableQuantity, cancellationToken);
+        return items.Select(item => new LowStockItemResponse(
+            item.ProductVariantId,
+            item.ProductName,
+            item.VariantName,
+            item.Sku,
+            item.UnitCode,
+            item.AvailableQuantity,
+            minimumAvailableQuantity - item.AvailableQuantity)).ToArray();
     }
 
     private static SupplierResponse ToResponse(Supplier supplier) => new(supplier.SupplierId, supplier.Name, supplier.ContactName, supplier.PhoneNumber, supplier.Email, supplier.Address, supplier.IsActive);

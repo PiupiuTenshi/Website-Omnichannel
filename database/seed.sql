@@ -1,6 +1,8 @@
 /* Pre-release catalog seed. Run only after EF Core migrations. */
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 
 BEGIN TRANSACTION;
 
@@ -182,5 +184,102 @@ SELECT NEWID(), productItem.ProductId, source.ImageUrl, 'image/jpeg', 45000, 400
 FROM @Products source
 JOIN Products productItem ON productItem.Slug = source.Slug
 WHERE NOT EXISTS (SELECT 1 FROM ProductImages target WHERE target.ProductId = productItem.ProductId);
+
+/* Phase 3: Suppliers and Inventory Seed */
+DECLARE @SupplierDalat uniqueidentifier = '5A0E2A1C-8E3F-4B0C-9D4A-7E1F8B6C3F2A';
+DECLARE @SupplierBahuan uniqueidentifier = 'B3E5C2D4-A7E1-4F8B-6C3F-2A0E2A1C8E3F';
+DECLARE @SupplierVifon uniqueidentifier = 'C3D4A7E1-F8B6-C3F2-A0E2-A1C8E3F4B0C2';
+
+IF NOT EXISTS (SELECT 1 FROM Suppliers WHERE SupplierId = @SupplierDalat)
+BEGIN
+    INSERT INTO Suppliers (SupplierId, Name, ContactName, PhoneNumber, Email, Address, IsActive, CreatedAtUtc, UpdatedAtUtc)
+    VALUES (@SupplierDalat, N'Nông trại rau củ Đà Lạt', N'Nguyễn Văn Ruộng', '0912345678', 'dalatveg@gmail.com', N'20 Lâm Viên, TP. Đà Lạt, Lâm Đồng', 1, @now, @now);
+END
+
+IF NOT EXISTS (SELECT 1 FROM Suppliers WHERE SupplierId = @SupplierBahuan)
+BEGIN
+    INSERT INTO Suppliers (SupplierId, Name, ContactName, PhoneNumber, Email, Address, IsActive, CreatedAtUtc, UpdatedAtUtc)
+    VALUES (@SupplierBahuan, N'Hộ kinh doanh Trứng Ba Huân', N'Trần Thị Trứng', '0987654321', 'bahuan@bahuan.com', N'12 Đại lộ Bình Dương, Thuận An, Bình Dương', 1, @now, @now);
+END
+
+IF NOT EXISTS (SELECT 1 FROM Suppliers WHERE SupplierId = @SupplierVifon)
+BEGIN
+    INSERT INTO Suppliers (SupplierId, Name, ContactName, PhoneNumber, Email, Address, IsActive, CreatedAtUtc, UpdatedAtUtc)
+    VALUES (@SupplierVifon, N'Tổng kho Vifon miền Nam', N'Lê Minh Mì', '0909090909', 'sales@vifon.com.vn', N'90 Tây Thạnh, Q. Tân Phú, TP. HCM', 1, @now, @now);
+END
+
+/* Link products to suppliers */
+INSERT INTO ProductSuppliers (ProductId, SupplierId, SupplierProductCode, IsPreferred, CreatedAtUtc)
+SELECT p.ProductId, @SupplierDalat, CONCAT('SUP-DL-', UPPER(p.Slug)), 1, @now
+FROM Products p
+JOIN Categories c ON p.CategoryId = c.CategoryId
+WHERE c.Slug = 'rau-cu' AND NOT EXISTS (SELECT 1 FROM ProductSuppliers ps WHERE ps.ProductId = p.ProductId AND ps.SupplierId = @SupplierDalat);
+
+INSERT INTO ProductSuppliers (ProductId, SupplierId, SupplierProductCode, IsPreferred, CreatedAtUtc)
+SELECT p.ProductId, @SupplierBahuan, CONCAT('SUP-BH-', UPPER(p.Slug)), 1, @now
+FROM Products p
+JOIN Categories c ON p.CategoryId = c.CategoryId
+WHERE c.Slug = 'sua-trung' AND NOT EXISTS (SELECT 1 FROM ProductSuppliers ps WHERE ps.ProductId = p.ProductId AND ps.SupplierId = @SupplierBahuan);
+
+INSERT INTO ProductSuppliers (ProductId, SupplierId, SupplierProductCode, IsPreferred, CreatedAtUtc)
+SELECT p.ProductId, @SupplierVifon, CONCAT('SUP-VF-', UPPER(p.Slug)), 1, @now
+FROM Products p
+JOIN Categories c ON p.CategoryId = c.CategoryId
+WHERE c.Slug = 'mi-an-lien' AND NOT EXISTS (SELECT 1 FROM ProductSuppliers ps WHERE ps.ProductId = p.ProductId AND ps.SupplierId = @SupplierVifon);
+
+/* Seed Inventory Batches */
+/* Batch 1: Tomato - Normal stock */
+DECLARE @VarTomato uniqueidentifier = (SELECT TOP 1 ProductVariantId FROM ProductVariants pv JOIN Products p ON pv.ProductId = p.ProductId WHERE p.Slug = 'ca-chua-da-lat');
+DECLARE @BatchTomato uniqueidentifier = 'A1111111-1111-1111-1111-111111111111';
+IF @VarTomato IS NOT NULL AND NOT EXISTS (SELECT 1 FROM InventoryBatches WHERE InventoryBatchId = @BatchTomato)
+BEGIN
+    INSERT INTO InventoryBatches (InventoryBatchId, ProductVariantId, SupplierId, InitialQuantity, AvailableQuantity, UnitCost, ReceivedAtUtc, ManufacturedAtUtc, ExpiresAtUtc, Status, CreatedAtUtc)
+    VALUES (@BatchTomato, @VarTomato, @SupplierDalat, 50.000, 45.000, 15000.00, DATEADD(day, -2, @now), DATEADD(day, -3, @now), DATEADD(day, 5, @now), 0, @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchTomato, @VarTomato, 0, 50.000, 'Initial receipt', DATEADD(day, -2, @now), @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchTomato, @VarTomato, 2, -5.000, 'In-store sales', DATEADD(day, -1, @now), @now);
+END
+
+/* Batch 2: Carrot - Low stock batch */
+DECLARE @VarCarrot uniqueidentifier = (SELECT TOP 1 ProductVariantId FROM ProductVariants pv JOIN Products p ON pv.ProductId = p.ProductId WHERE p.Slug = 'ca-rot-da-lat');
+DECLARE @BatchCarrot uniqueidentifier = 'B2222222-2222-2222-2222-222222222222';
+IF @VarCarrot IS NOT NULL AND NOT EXISTS (SELECT 1 FROM InventoryBatches WHERE InventoryBatchId = @BatchCarrot)
+BEGIN
+    INSERT INTO InventoryBatches (InventoryBatchId, ProductVariantId, SupplierId, InitialQuantity, AvailableQuantity, UnitCost, ReceivedAtUtc, ManufacturedAtUtc, ExpiresAtUtc, Status, CreatedAtUtc)
+    VALUES (@BatchCarrot, @VarCarrot, @SupplierDalat, 10.000, 2.000, 12000.00, DATEADD(day, -4, @now), DATEADD(day, -5, @now), DATEADD(day, 3, @now), 0, @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchCarrot, @VarCarrot, 0, 10.000, 'Initial receipt', DATEADD(day, -4, @now), @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchCarrot, @VarCarrot, 2, -8.000, 'Damaged during sorting', DATEADD(day, -2, @now), @now);
+END
+
+/* Batch 3: Egg - Near expiry */
+DECLARE @VarEgg uniqueidentifier = (SELECT TOP 1 ProductVariantId FROM ProductVariants pv JOIN Products p ON pv.ProductId = p.ProductId WHERE p.Slug = 'trung-ga-vinamilk');
+DECLARE @BatchEgg uniqueidentifier = 'C3333333-3333-3333-3333-333333333333';
+IF @VarEgg IS NOT NULL AND NOT EXISTS (SELECT 1 FROM InventoryBatches WHERE InventoryBatchId = @BatchEgg)
+BEGIN
+    INSERT INTO InventoryBatches (InventoryBatchId, ProductVariantId, SupplierId, InitialQuantity, AvailableQuantity, UnitCost, ReceivedAtUtc, ManufacturedAtUtc, ExpiresAtUtc, Status, CreatedAtUtc)
+    VALUES (@BatchEgg, @VarEgg, @SupplierBahuan, 20.000, 20.000, 22000.00, DATEADD(day, -8, @now), DATEADD(day, -9, @now), DATEADD(day, 1, @now), 0, @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchEgg, @VarEgg, 0, 20.000, 'Initial receipt', DATEADD(day, -8, @now), @now);
+END
+
+/* Batch 4: Hảo Hảo noodles - Expired */
+DECLARE @VarNoodle uniqueidentifier = (SELECT TOP 1 ProductVariantId FROM ProductVariants pv JOIN Products p ON pv.ProductId = p.ProductId WHERE p.Slug = 'mi-hao-hao-tom-cay');
+DECLARE @BatchNoodle uniqueidentifier = 'D4444444-4444-4444-4444-444444444444';
+IF @VarNoodle IS NOT NULL AND NOT EXISTS (SELECT 1 FROM InventoryBatches WHERE InventoryBatchId = @BatchNoodle)
+BEGIN
+    INSERT INTO InventoryBatches (InventoryBatchId, ProductVariantId, SupplierId, InitialQuantity, AvailableQuantity, UnitCost, ReceivedAtUtc, ManufacturedAtUtc, ExpiresAtUtc, Status, CreatedAtUtc)
+    VALUES (@BatchNoodle, @VarNoodle, @SupplierVifon, 100.000, 100.000, 3200.00, DATEADD(month, -6, @now), DATEADD(month, -7, @now), DATEADD(day, -5, @now), 3, @now);
+
+    INSERT INTO InventoryTransactions (InventoryTransactionId, InventoryBatchId, ProductVariantId, Type, QuantityDelta, Reason, OccurredAtUtc, CreatedAtUtc)
+    VALUES (NEWID(), @BatchNoodle, @VarNoodle, 0, 100.000, 'Initial receipt', DATEADD(month, -6, @now), @now);
+END
 
 COMMIT TRANSACTION;

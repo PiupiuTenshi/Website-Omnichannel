@@ -11,7 +11,15 @@ export function PublicLayout() {
           <Link className="public-layout__brand" to="/">Tạp hóa chị Tỏ</Link>
           <nav className="public-layout__navigation" aria-label="Account navigation">
             <Link to="/">Sản phẩm</Link>
-            {session?.roles.some((role) => role === "Admin" || role === "Manager") ? <Link to="/admin/products/new">Thêm sản phẩm</Link> : null}
+            {session?.roles.some((role) => role === "Admin" || role === "Manager") ? (
+              <>
+                <Link to="/admin/products/new">Thêm sản phẩm</Link>
+                <Link to="/admin/inventory/suppliers">Nhà cung cấp</Link>
+                <Link to="/admin/inventory/receive">Nhập kho</Link>
+                <Link to="/admin/inventory/batches">Lô hàng</Link>
+                <Link to="/admin/inventory/low-stock">Cần nhập</Link>
+              </>
+            ) : null}
             {session === null ? <Link to="/login">Sign in</Link> : <button type="button" onClick={() => void logout()}>Sign out</button>}
           </nav>
         </div>

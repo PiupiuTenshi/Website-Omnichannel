@@ -1,8 +1,8 @@
 using GroceryStore.Domain.Enums;
 
-namespace GroceryStore.Application.Features.Inventory;
+namespace GroceryStore.Application.Abstractions.Persistence;
 
-public sealed record InventoryBatchResponse(
+public sealed record DetailedInventoryBatch(
     Guid InventoryBatchId,
     Guid ProductVariantId,
     Guid? SupplierId,
@@ -13,8 +13,8 @@ public sealed record InventoryBatchResponse(
     DateTime? ManufacturedAtUtc,
     DateTime? ExpiresAtUtc,
     InventoryBatchStatus Status,
-    string ProductName = "",
-    string VariantName = "",
-    string Sku = "",
-    string UnitCode = "",
-    string SupplierName = "");
+    string ProductName,
+    string VariantName,
+    string Sku,
+    string UnitCode,
+    string SupplierName);

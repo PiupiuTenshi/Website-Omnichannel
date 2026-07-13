@@ -40,6 +40,70 @@ public sealed class InventoryRepository : IInventoryRepository
         return await query.OrderBy(batch => batch.ExpiresAtUtc == null).ThenBy(batch => batch.ExpiresAtUtc).ThenBy(batch => batch.ReceivedAtUtc).ToArrayAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<DetailedInventoryBatch>> GetDetailedBatchesAsync(Guid? productVariantId, CancellationToken cancellationToken)
+    {
+        var query = applicationDbContext.InventoryBatches.AsNoTracking();
+        if (productVariantId is not null)
+        {
+            query = query.Where(batch => batch.ProductVariantId == productVariantId);
+        }
+
+        var resultQuery =
+            from batch in query
+            join variant in applicationDbContext.ProductVariants.AsNoTracking() on batch.ProductVariantId equals variant.ProductVariantId
+            join product in applicationDbContext.Products.AsNoTracking() on variant.ProductId equals product.ProductId
+            join unit in applicationDbContext.UnitsOfMeasure.AsNoTracking() on product.UnitOfMeasureId equals unit.UnitOfMeasureId
+            join supplier in applicationDbContext.Suppliers.AsNoTracking() on batch.SupplierId equals supplier.SupplierId into suppliers
+            from supplier in suppliers.DefaultIfEmpty()
+            select new DetailedInventoryBatch(
+                batch.InventoryBatchId,
+                batch.ProductVariantId,
+                batch.SupplierId,
+                batch.InitialQuantity,
+                batch.AvailableQuantity,
+                batch.UnitCost,
+                batch.ReceivedAtUtc,
+                batch.ManufacturedAtUtc,
+                batch.ExpiresAtUtc,
+                batch.Status,
+                product.Name,
+                variant.Name,
+                variant.Sku,
+                unit.Code,
+                supplier == null ? "" : supplier.Name);
+
+        return await resultQuery
+            .OrderBy(batch => batch.ExpiresAtUtc == null)
+            .ThenBy(batch => batch.ExpiresAtUtc)
+            .ThenBy(batch => batch.ReceivedAtUtc)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<LowStockInventoryItem>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken)
+    {
+        var availableQuantities = applicationDbContext.InventoryBatches
+            .AsNoTracking()
+            .GroupBy(batch => batch.ProductVariantId)
+            .Select(group => new { ProductVariantId = group.Key, AvailableQuantity = group.Sum(batch => batch.AvailableQuantity) });
+
+        return await (
+            from variant in applicationDbContext.ProductVariants.AsNoTracking()
+            join product in applicationDbContext.Products.AsNoTracking() on variant.ProductId equals product.ProductId
+            join unit in applicationDbContext.UnitsOfMeasure.AsNoTracking() on product.UnitOfMeasureId equals unit.UnitOfMeasureId
+            join quantity in availableQuantities on variant.ProductVariantId equals quantity.ProductVariantId into quantities
+            from quantity in quantities.DefaultIfEmpty()
+            where variant.IsActive && product.IsActive && (quantity == null || quantity.AvailableQuantity <= minimumAvailableQuantity)
+            orderby product.Name, variant.Name
+            select new LowStockInventoryItem(
+                variant.ProductVariantId,
+                product.Name,
+                variant.Name,
+                variant.Sku,
+                unit.Code,
+                quantity == null ? 0m : quantity.AvailableQuantity))
+            .ToArrayAsync(cancellationToken);
+    }
+
     public Task AddSupplierAsync(Supplier supplier, CancellationToken cancellationToken) =>
         applicationDbContext.Suppliers.AddAsync(supplier, cancellationToken).AsTask();
 

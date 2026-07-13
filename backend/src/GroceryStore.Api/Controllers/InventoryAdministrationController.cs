@@ -40,6 +40,21 @@ public sealed class InventoryAdministrationController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<InventoryBatchResponse>>> GetBatchesAsync([FromQuery] Guid? productVariantId, CancellationToken cancellationToken) =>
         Ok(await inventoryService.GetBatchesAsync(productVariantId, cancellationToken));
 
+    [HttpGet("low-stock")]
+    public async Task<ActionResult<IReadOnlyList<LowStockItemResponse>>> GetLowStockAsync(
+        [FromQuery] decimal minimumAvailableQuantity = 5m,
+        CancellationToken cancellationToken = default) =>
+        Ok(await inventoryService.GetLowStockItemsAsync(minimumAvailableQuantity, cancellationToken));
+
+    [HttpGet("purchase-list.csv")]
+    public async Task<IActionResult> ExportPurchaseListAsync(
+        [FromQuery] decimal minimumAvailableQuantity = 5m,
+        CancellationToken cancellationToken = default)
+    {
+        var items = await inventoryService.GetLowStockItemsAsync(minimumAvailableQuantity, cancellationToken);
+        return File(PurchaseListCsvExporter.Export(items), "text/csv; charset=utf-8", "purchase-list.csv");
+    }
+
     [HttpPost("receipts")]
     public async Task<ActionResult<InventoryBatchResponse>> ReceiveAsync(ReceiveInventoryRequest request, CancellationToken cancellationToken)
     {
