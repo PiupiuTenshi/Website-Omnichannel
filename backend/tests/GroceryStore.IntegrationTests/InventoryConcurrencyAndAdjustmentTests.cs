@@ -86,7 +86,7 @@ public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFac
         // Note: Concurrency token (rowversion) check requires a real database like SQL Server.
         // We run this test against the local SQL Docker container.
         // If SQL Docker is not accessible, we skip the test gracefully.
-        
+
         using var testFactory = CreateDockerFactory();
         try
         {
