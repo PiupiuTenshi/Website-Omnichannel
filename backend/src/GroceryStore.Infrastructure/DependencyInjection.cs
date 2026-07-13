@@ -4,9 +4,12 @@ using GroceryStore.Application.Abstractions.Email;
 using GroceryStore.Application.Abstractions.Sms;
 using GroceryStore.Application.Abstractions.Storage;
 using GroceryStore.Infrastructure.Authentication;
+using GroceryStore.Infrastructure.BackgroundJobs;
 using GroceryStore.Infrastructure.Email;
 using GroceryStore.Infrastructure.Sms;
 using GroceryStore.Infrastructure.Storage;
+using GroceryStore.Infrastructure.Shipping;
+using GroceryStore.Application.Abstractions.Shipping;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +27,7 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SECTION_NAME));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SECTION_NAME));
         services.Configure<ImageStorageOptions>(configuration.GetSection(ImageStorageOptions.SECTION_NAME));
+        services.Configure<ShippingOptions>(configuration.GetSection(ShippingOptions.SECTION_NAME));
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddScoped<ISmsOtpSender, MockSmsOtpSender>();
         services.AddScoped<IEmailSender>(_ => string.Equals(smtpOptions.Provider, "Smtp", StringComparison.OrdinalIgnoreCase)
@@ -32,6 +36,9 @@ public static class DependencyInjection
         services.AddSingleton<ProductImageTransformer>();
         services.AddSingleton<IImageStorage, LocalImageStorage>();
         services.AddSingleton<LocalImageStorage>();
+        services.AddHostedService<ReservationExpiryBackgroundService>();
+        services.AddHttpClient<IShippingDistanceService, GoongShippingDistanceService>(client => client.BaseAddress = new Uri("https://rsapi.goong.io/"));
+        services.AddSingleton<IShippingQuotePolicy, ShippingQuotePolicy>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

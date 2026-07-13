@@ -4,6 +4,16 @@ import { useAuth } from "../features/auth";
 export function PublicLayout() {
   const { session, logout } = useAuth();
 
+  const getDashboardPath = () => {
+    if (!session) return null;
+    if (session.roles.includes("Admin")) return "/admin/dashboard";
+    if (session.roles.includes("Manager")) return "/manager/dashboard";
+    if (session.roles.includes("Seller")) return "/seller/dashboard";
+    return null;
+  };
+
+  const dashboardPath = getDashboardPath();
+
   return (
     <div className="public-layout">
       <header className="public-layout__header">
@@ -11,18 +21,9 @@ export function PublicLayout() {
           <Link className="public-layout__brand" to="/">Tạp hóa chị Tỏ</Link>
           <nav className="public-layout__navigation" aria-label="Account navigation">
             <Link to="/">Sản phẩm</Link>
-            {session?.roles.some((role) => role === "Admin" || role === "Manager" || role === "Seller") ? (
-              <Link to="/admin/pos">POS Bán hàng</Link>
-            ) : null}
-            {session?.roles.some((role) => role === "Admin" || role === "Manager") ? (
-              <>
-                <Link to="/admin/products/new">Thêm sản phẩm</Link>
-                <Link to="/admin/inventory/suppliers">Nhà cung cấp</Link>
-                <Link to="/admin/inventory/receive">Nhập kho</Link>
-                <Link to="/admin/inventory/batches">Lô hàng</Link>
-                <Link to="/admin/inventory/low-stock">Cần nhập</Link>
-              </>
-            ) : null}
+            {dashboardPath && (
+              <Link to={dashboardPath}>Trang quản trị</Link>
+            )}
             {session === null ? <Link to="/login">Sign in</Link> : <button type="button" onClick={() => void logout()}>Sign out</button>}
           </nav>
         </div>
@@ -32,3 +33,4 @@ export function PublicLayout() {
     </div>
   );
 }
+
