@@ -15,6 +15,7 @@ public sealed class ReturnService(IReviewReturnsRepository repository)
     {
         var item = await repository.GetDeliveredOrderItemAsync(command.OnlineOrderItemId, buyerUserId, cancellationToken)
             ?? throw new BusinessRuleViolationException("Only buyers with a delivered order item can request a return.");
+        if (!await repository.HasOrderItemAllocationAsync(command.OnlineOrderItemId, cancellationToken)) throw new BusinessRuleViolationException("Return item allocation could not be verified.");
         if (command.Reason == ReturnReason.ChangedMind && await repository.IsPerishableAsync(item.ProductVariantId, cancellationToken)) throw new BusinessRuleViolationException("Perishable goods cannot be returned because of a change of mind.");
         var request = new ReturnRequest(item.OnlineOrderItemId, item.ProductVariantId, buyerUserId, command.Reason, command.Description, DateTime.UtcNow);
         await repository.AddReturnRequestAsync(request, cancellationToken); await repository.SaveChangesAsync(cancellationToken); return ToResponse(request);

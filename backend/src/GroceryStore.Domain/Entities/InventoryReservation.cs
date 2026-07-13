@@ -64,4 +64,10 @@ public sealed class InventoryReservation
         Status = InventoryReservationStatus.Released;
         ReleasedAtUtc = utcNow;
     }
+
+    public void Convert()
+    {
+        if (Status != InventoryReservationStatus.Active) throw new InvalidOperationException("Only active reservations can be converted to order allocations.");
+        Status = InventoryReservationStatus.Converted;
+    }
 }

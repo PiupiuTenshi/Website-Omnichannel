@@ -17,6 +17,9 @@ public sealed class ReviewReturnsRepository(ApplicationDbContext context) : IRev
     public Task<bool> IsPerishableAsync(Guid productVariantId, CancellationToken cancellationToken) =>
         context.ExpiryPolicies.AnyAsync(policy => policy.ProductVariantId == productVariantId, cancellationToken);
 
+    public Task<bool> HasOrderItemAllocationAsync(Guid onlineOrderItemId, CancellationToken cancellationToken) =>
+        context.OnlineOrderAllocations.AnyAsync(allocation => allocation.OnlineOrderItemId == onlineOrderItemId, cancellationToken);
+
     public Task<bool> ReviewExistsAsync(Guid onlineOrderItemId, CancellationToken cancellationToken) =>
         context.ProductReviews.AnyAsync(review => review.OnlineOrderItemId == onlineOrderItemId, cancellationToken);
 
