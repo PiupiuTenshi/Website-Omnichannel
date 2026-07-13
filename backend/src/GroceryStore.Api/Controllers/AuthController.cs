@@ -1,10 +1,12 @@
 using GroceryStore.Api.Contracts;
 using GroceryStore.Application.Features.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GroceryStore.Api.Controllers;
 
 [ApiController]
+[EnableRateLimiting("auth")]
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {

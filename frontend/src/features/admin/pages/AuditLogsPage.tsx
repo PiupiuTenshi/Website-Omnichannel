@@ -16,7 +16,7 @@ export function AuditLogsPage() {
   const [selectedModule, setSelectedModule] = useState("Tất cả");
 
   // Rich mock dataset for a premium audit view
-  const initialAuditLogs: AuditLog[] = [
+  const initialAuditLogs = useMemo<AuditLog[]>(() => [
     { id: 1, time: "2026-07-13 16:45:12", user: "manager@store.com", action: "Nhập lô hàng mới (Mã lô: BATCH-092)", module: "Kho hàng", ip: "192.168.1.15", status: "Success" },
     { id: 2, time: "2026-07-13 15:20:08", user: "seller@store.com", action: "Thực hiện thanh toán POS đơn #10429", module: "Bán hàng", ip: "192.168.1.20", status: "Success" },
     { id: 3, time: "2026-07-13 14:10:55", user: "admin@store.com", action: "Cập nhật cấu hình hệ thống: Tắt online ordering", module: "Cài đặt", ip: "192.168.1.2", status: "Success" },
@@ -27,7 +27,7 @@ export function AuditLogsPage() {
     { id: 8, time: "2026-07-12 17:05:00", user: "buyer@store.com", action: "Gửi phản hồi đánh giá sản phẩm (Đơn hàng #10385)", module: "Đánh giá", ip: "115.75.12.98", status: "Success" },
     { id: 9, time: "2026-07-12 11:22:10", user: "admin@store.com", action: "Mở khóa kích hoạt tài khoản nhân viên (seller@store.com)", module: "Hệ thống", ip: "192.168.1.2", status: "Success" },
     { id: 10, time: "2026-07-12 08:15:33", user: "unknown_ip", action: "Đăng nhập thất bại quá 5 lần (Tài khoản: test_attacker)", module: "Hệ thống", ip: "203.162.4.55", status: "Error" }
-  ];
+  ], []);
 
   // Filtering logic
   const filteredLogs = useMemo(() => {
@@ -39,7 +39,7 @@ export function AuditLogsPage() {
       const matchesModule = selectedModule === "Tất cả" || log.module === selectedModule;
       return matchesSearch && matchesModule;
     });
-  }, [searchTerm, selectedModule]);
+  }, [initialAuditLogs, searchTerm, selectedModule]);
 
   return (
     <div className="audit-logs-page">

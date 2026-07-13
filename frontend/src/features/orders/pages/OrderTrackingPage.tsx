@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../../auth";
 import {
@@ -35,7 +35,7 @@ export function OrderTrackingPage() {
 
   const isManager = session?.roles.includes("Admin") || session?.roles.includes("Manager");
 
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     try {
       const data = await getOnlineOrder(orderId, accessToken);
       setOrder(data);
@@ -43,14 +43,14 @@ export function OrderTrackingPage() {
         setShippingFeeInput(data.shippingFee.toString());
       }
       setManagerMessageInput(data.managerMessage || "");
-    } catch (err) {
+    } catch {
       setError("Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.");
     }
-  };
+  }, [accessToken, orderId]);
 
   useEffect(() => {
     void loadOrder();
-  }, [orderId, accessToken]);
+  }, [loadOrder]);
 
   // Handle countdown reservation timer
   useEffect(() => {
@@ -90,7 +90,7 @@ export function OrderTrackingPage() {
         setShippingFeeInput(updatedOrder.shippingFee.toString());
       }
       setManagerMessageInput(updatedOrder.managerMessage || "");
-    } catch (err) {
+    } catch {
       setError("Không thể cập nhật đơn hàng. Vui lòng kiểm tra và thử lại.");
     } finally {
       setIsSubmitting(false);
