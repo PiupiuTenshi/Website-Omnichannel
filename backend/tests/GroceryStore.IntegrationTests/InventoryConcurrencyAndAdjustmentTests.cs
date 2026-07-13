@@ -14,7 +14,7 @@ namespace GroceryStore.IntegrationTests;
 
 public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private static readonly string DockerConnectionString = GetDockerConnectionString();
+    private static readonly string DOCKER_CONNECTION_STRING = GetDockerConnectionString();
 
     [Fact]
     public async Task Adjust_CreatesTransactionAndDoesNotModifyHistoryAsync()
@@ -86,7 +86,7 @@ public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFac
         // Note: Concurrency token (rowversion) check requires a real database like SQL Server.
         // We run this test against the local SQL Docker container.
         // If SQL Docker is not accessible, we skip the test gracefully.
-        
+
         using var testFactory = CreateDockerFactory();
         try
         {
@@ -218,7 +218,7 @@ public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFac
                 services.Remove(descriptor);
             }
 
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(DockerConnectionString));
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(DOCKER_CONNECTION_STRING));
             services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = TestAuthenticationHandler.SCHEME_NAME;

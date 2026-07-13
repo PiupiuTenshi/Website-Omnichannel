@@ -1,0 +1,578 @@
+.pos-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pos-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.pos-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0; /* Prevents overflow */
+}
+
+.pos-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, var(--color-primary-light, #c084fc), var(--color-primary, #a855f7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pos-search-box {
+  position: relative;
+  padding: 1.25rem;
+}
+
+.pos-search-input {
+  font-size: 1.1rem;
+  padding: 0.8rem 1rem;
+}
+
+.pos-search-results {
+  position: absolute;
+  top: 100%;
+  left: 1.25rem;
+  right: 1.25rem;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-top: none;
+  border-bottom-left-radius: var(--border-radius, 8px);
+  border-bottom-right-radius: var(--border-radius, 8px);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.pos-search-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-color, #334155);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-color, #f8fafc);
+  transition: background-color 0.2s ease;
+}
+
+.pos-search-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.pos-search-item:last-child {
+  border-bottom: none;
+}
+
+.pos-search-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pos-search-item__name {
+  font-size: 1rem;
+}
+
+.pos-search-item__variant {
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.pos-search-item__pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.pos-search-item__price {
+  font-weight: 600;
+  color: var(--color-primary, #a855f7);
+}
+
+.pos-search-item__stock {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Table overrides for POS */
+.pos-table th {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.pos-table td {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-display {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.pos-row-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Sidebar Checkout Area */
+.pos-sidebar {
+  width: 400px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.pos-sidebar-container {
+  padding: 1.5rem;
+}
+
+.pos-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.pos-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pos-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+
+.pos-summary-row.highlight {
+  font-size: 1.15rem;
+  border-top: 1px solid var(--border-color, #334155);
+  border-bottom: 1px solid var(--border-color, #334155);
+  padding: 0.75rem 0;
+}
+
+.pos-summary-row.highlight strong {
+  color: var(--color-primary-light, #c084fc);
+}
+
+.pos-summary-row.result {
+  font-size: 1.2rem;
+  padding: 0.5rem 0;
+}
+
+.pos-summary-row.result strong {
+  font-size: 1.3rem;
+  font-family: monospace;
+}
+
+.pos-payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pos-payment-options {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pos-payment-btn {
+  flex: 1;
+  font-weight: 600;
+  padding: 0.75rem;
+}
+
+.cash-panel, .qr-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  border-radius: var(--border-radius, 8px);
+}
+
+.quick-cash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.quick-cash-grid button {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, #334155);
+  color: var(--text-color, #f8fafc);
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius-sm, 4px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-cash-grid button:hover {
+  background-color: var(--color-primary, #a855f7);
+}
+
+.qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qr-img {
+  width: 180px;
+  height: 180px;
+  border: 4px solid white;
+  border-radius: 8px;
+}
+
+.qr-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+  text-align: center;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.mobile-cart-badge {
+  display: none;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  padding: 2rem;
+  position: relative;
+  animation: modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-lead {
+  font-size: 1.1rem;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 1.5rem;
+}
+
+.font-large {
+  font-size: 1.5rem !important;
+  text-align: center;
+  font-weight: bold;
+}
+
+.form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* 58mm Thermal Bill Styling */
+.thermal-bill {
+  width: 58mm;
+  background-color: #fff;
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 4mm;
+  margin: 0 auto;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.thermal-bill__header {
+  text-align: center;
+}
+
+.thermal-bill__header h3 {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+}
+
+.thermal-bill__header h4 {
+  font-size: 13px;
+  font-weight: bold;
+  margin: 8px 0 4px 0;
+}
+
+.thermal-bill__header p {
+  margin: 2px 0;
+}
+
+.thermal-bill__divider {
+  text-align: center;
+  margin: 4px 0;
+}
+
+.thermal-bill__items {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.thermal-bill__items th {
+  text-align: left;
+  border-bottom: 1px dashed #000;
+  font-weight: bold;
+}
+
+.thermal-bill__items td {
+  padding: 4px 0;
+  vertical-align: top;
+}
+
+.thermal-bill__items th:nth-child(2),
+.thermal-bill__items td:nth-child(2) {
+  text-align: center;
+}
+
+.thermal-bill__items th:nth-child(3),
+.thermal-bill__items td:nth-child(3) {
+  text-align: right;
+}
+
+.thermal-bill__summary {
+  margin-top: 6px;
+  text-align: right;
+}
+
+.thermal-bill__summary p {
+  margin: 3px 0;
+}
+
+.thermal-bill__footer {
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* Price Tag (40x60mm) */
+.price-tag {
+  width: 60mm;
+  height: 40mm;
+  background-color: #fff;
+  color: #000;
+  border: 2px solid #000;
+  padding: 3mm;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.price-tag__brand {
+  font-size: 9px;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2px;
+}
+
+.price-tag__title {
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 2px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.price-tag__variant {
+  font-size: 10px;
+  text-align: center;
+  color: #555;
+}
+
+.price-tag__sku {
+  font-size: 8px;
+  text-align: center;
+}
+
+.price-tag__barcode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.price-tag__barcode-visual {
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.price-tag__barcode span {
+  font-size: 7px;
+}
+
+.price-tag__price {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  border-top: 1px solid #000;
+  padding-top: 2px;
+}
+
+/* Media Print Overrides */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .thermal-bill-modal .thermal-bill,
+  .thermal-bill-modal .thermal-bill * {
+    visibility: visible;
+  }
+  .thermal-bill-modal .thermal-bill {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 58mm;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    z-index: 9999;
+  }
+
+  .tag-preview-modal .price-tag,
+  .tag-preview-modal .price-tag * {
+    visibility: visible;
+  }
+  .tag-preview-modal .price-tag {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 60mm;
+    height: 40mm;
+    border: 2px solid #000;
+    box-shadow: none;
+    padding: 3mm;
+    margin: 0;
+    z-index: 9999;
+  }
+}
+
+/* Animations */
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive QA Breakpoints (390px, 768px, 1366px) */
+@media (max-width: 1024px) {
+  .pos-layout {
+    flex-direction: column;
+  }
+
+  .pos-sidebar {
+    width: 100%;
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-page {
+    padding: 1rem;
+  }
+  
+  .pos-row-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Mobile POS drawer layout */
+  .pos-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    background-color: var(--bg-body, #0f172a);
+    overflow-y: auto;
+  }
+
+  .pos-sidebar--show {
+    display: block !important;
+  }
+
+  .mobile-cart-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    background-color: var(--color-primary, #a855f7);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.4);
+    z-index: 400;
+    cursor: pointer;
+  }
+
+  .mobile-only {
+    display: inline-block !important;
+  }
+}
