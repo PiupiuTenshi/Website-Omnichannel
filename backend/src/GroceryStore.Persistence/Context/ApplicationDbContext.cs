@@ -36,6 +36,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<ExpiryPolicy> ExpiryPolicies => Set<ExpiryPolicy>();
 
+    public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -46,6 +50,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureStoreSettings(modelBuilder);
         ConfigureCatalog(modelBuilder);
         ConfigureInventory(modelBuilder);
+        ConfigureOrdering(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -273,6 +278,41 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasOne<ProductVariant>()
                 .WithMany()
                 .HasForeignKey(policy => policy.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureOrdering(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(order => order.OrderId);
+            entity.Property(order => order.OrderCode).HasMaxLength(50).IsRequired();
+            entity.Property(order => order.ExactAmount).HasPrecision(18, 2);
+            entity.Property(order => order.AmountDue).HasPrecision(18, 2);
+            entity.Property(order => order.CashReceived).HasPrecision(18, 2);
+            entity.Property(order => order.ChangeAmount).HasPrecision(18, 2);
+            entity.Property(order => order.ProcessedByUserId).HasMaxLength(450).IsRequired();
+            entity.Property(order => order.RowVersion).IsRowVersion();
+            entity.HasIndex(order => order.OrderCode).IsUnique();
+            entity.HasIndex(order => order.ProcessedByUserId);
+            entity.HasMany(order => order.OrderItems)
+                .WithOne()
+                .HasForeignKey(item => item.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(item => item.OrderItemId);
+            entity.Property(item => item.Quantity).HasPrecision(18, 3);
+            entity.Property(item => item.UnitPrice).HasPrecision(18, 2);
+            entity.Property(item => item.LineTotal).HasPrecision(18, 2);
+            entity.HasIndex(item => item.OrderId);
+            entity.HasIndex(item => item.ProductVariantId);
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(item => item.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

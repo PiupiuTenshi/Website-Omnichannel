@@ -3,6 +3,7 @@ import { StoreSettingsPage } from "../../features/admin";
 import { LoginPage, RegisterPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
 import { CatalogPage, ProductDetailPage, ProductFormPage } from "../../features/catalog";
 import { InventoryBatchesPage, InventoryReceivePage, LowStockPage, SuppliersPage } from "../../features/inventory";
+import { PosPage } from "../../features/pos";
 import { PublicLayout } from "../../layouts/PublicLayout";
 import { FoundationPage } from "../../pages/FoundationPage";
 import { NotFoundPage } from "../../pages/NotFoundPage";
@@ -17,6 +18,12 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "verify", element: <VerifyAccountPage /> },
+      {
+        element: <RoleRouteGuard allowedRoles={["Admin", "Manager", "Seller"]} />,
+        children: [
+          { path: "admin/pos", element: <PosPage /> }
+        ]
+      },
       {
         element: <RoleRouteGuard allowedRoles={["Admin", "Manager"]} />,
         children: [

@@ -46,7 +46,8 @@ public sealed class ProjectDependencyTests
             typeof(Program).Assembly,
             typeof(ApplicationAssemblyMarker).Assembly,
             typeof(InfrastructureAssemblyMarker).Assembly,
-            typeof(PersistenceAssemblyMarker).Assembly);
+            typeof(PersistenceAssemblyMarker).Assembly,
+            typeof(DomainAssemblyMarker).Assembly);
     }
 
     private static void AssertProjectReferences(Assembly sourceAssembly, params Assembly[] allowedAssemblies)
