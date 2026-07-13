@@ -443,7 +443,7 @@ public sealed class CatalogService
             product.UnitOfMeasure?.Name ?? string.Empty,
             variant.SellingPrice,
             variant.CompareAtPrice,
-            primaryImage is null ? null : GetImageUrl(primaryImage.ProductImageId));
+            primaryImage is null ? null : GetImageUrl(primaryImage));
     }
 
     private static ProductDetailResponse ToDetailResponse(Product product)
@@ -470,7 +470,7 @@ public sealed class CatalogService
     {
         return new ProductImageResponse(
             image.ProductImageId,
-            GetImageUrl(image.ProductImageId),
+            GetImageUrl(image),
             image.ContentType,
             image.ByteSize,
             image.Width,
@@ -479,9 +479,14 @@ public sealed class CatalogService
             image.IsPrimary);
     }
 
-    private static string GetImageUrl(Guid productImageId)
+    private static string GetImageUrl(ProductImage image)
     {
-        return $"/api/product-images/{productImageId}";
+        if (image.ObjectKey.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            image.ObjectKey.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return image.ObjectKey;
+        }
+        return $"/api/product-images/{image.ProductImageId}";
     }
 
     private static string NormalizeRequired(string value, string fieldName)
