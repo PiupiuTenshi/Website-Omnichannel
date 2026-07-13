@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth";
 import { createSupplier, getSuppliers } from "../api/inventoryApi";
 import type { Supplier } from "../types/inventoryTypes";
@@ -19,22 +19,22 @@ export function SuppliersPage() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!session) return;
     try {
       setLoading(true);
       const data = await getSuppliers(session.accessToken);
       setSuppliers(data);
-    } catch (err: unknown) {
+    } catch {
       setError("Không thể tải danh sách nhà cung cấp. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     void loadData();
-  }, [session]);
+  }, [loadData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

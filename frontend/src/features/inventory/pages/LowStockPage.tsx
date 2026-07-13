@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth";
 import { getLowStockItems } from "../api/inventoryApi";
 import type { LowStockItem } from "../types/inventoryTypes";
@@ -14,7 +14,7 @@ export function LowStockPage() {
   const [error, setError] = useState("");
   const [csvLoading, setCsvLoading] = useState(false);
 
-  const loadData = async (minQty: number) => {
+  const loadData = useCallback(async (minQty: number) => {
     if (!session) return;
     try {
       setLoading(true);
@@ -26,14 +26,14 @@ export function LowStockPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     const thresholdNum = Number(threshold);
     if (!isNaN(thresholdNum) && thresholdNum >= 0) {
       void loadData(thresholdNum);
     }
-  }, [session, threshold]);
+  }, [loadData, threshold]);
 
   const handleDownloadCsv = async () => {
     if (!session) return;
