@@ -11,6 +11,9 @@ export function PublicLayout() {
           <Link className="public-layout__brand" to="/">Tạp hóa chị Tỏ</Link>
           <nav className="public-layout__navigation" aria-label="Account navigation">
             <Link to="/">Sản phẩm</Link>
+            {session?.roles.some((role) => role === "Admin" || role === "Manager" || role === "Seller") ? (
+              <Link to="/admin/pos">POS Bán hàng</Link>
+            ) : null}
             {session?.roles.some((role) => role === "Admin" || role === "Manager") ? (
               <>
                 <Link to="/admin/products/new">Thêm sản phẩm</Link>
