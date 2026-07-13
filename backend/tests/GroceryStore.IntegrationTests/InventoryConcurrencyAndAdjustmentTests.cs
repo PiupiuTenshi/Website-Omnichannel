@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using GroceryStore.Application.Features.Inventory;
 using GroceryStore.Domain.Entities;
@@ -13,7 +14,7 @@ namespace GroceryStore.IntegrationTests;
 
 public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private const string DockerConnectionString = "Server=localhost,1433;Database=GroceryStoreDb_Test_Concurrency;User ID=sa;Password=Iloveyou123@123;TrustServerCertificate=True";
+    private static readonly string DockerConnectionString = GetDockerConnectionString();
 
     [Fact]
     public async Task Adjust_CreatesTransactionAndDoesNotModifyHistoryAsync()
@@ -226,5 +227,44 @@ public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFac
                 })
                 .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(TestAuthenticationHandler.SCHEME_NAME, _ => { });
         }));
+    }
+
+    private static string GetDockerConnectionString()
+    {
+        var envConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+        if (!string.IsNullOrWhiteSpace(envConn))
+        {
+            return ReplaceDatabaseName(envConn, "GroceryStoreDb_Test_Concurrency");
+        }
+
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            var envLocalPath = Path.Combine(dir.FullName, ".env.local");
+            if (File.Exists(envLocalPath))
+            {
+                foreach (var line in File.ReadLines(envLocalPath))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("ConnectionStrings__DefaultConnection="))
+                    {
+                        var val = trimmed["ConnectionStrings__DefaultConnection=".Length..].Trim();
+                        return ReplaceDatabaseName(val, "GroceryStoreDb_Test_Concurrency");
+                    }
+                }
+            }
+            dir = dir.Parent;
+        }
+
+        return "Server=localhost,1433;Database=GroceryStoreDb_Test_Concurrency;User ID=sa;Password=replace-me;TrustServerCertificate=True";
+    }
+
+    private static string ReplaceDatabaseName(string connectionString, string newDatabaseName)
+    {
+        var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString)
+        {
+            InitialCatalog = newDatabaseName
+        };
+        return builder.ConnectionString;
     }
 }

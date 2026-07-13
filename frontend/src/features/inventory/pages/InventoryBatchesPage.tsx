@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth";
 import { adjustInventory, getBatches } from "../api/inventoryApi";
 import type { InventoryBatch } from "../types/inventoryTypes";
@@ -32,7 +32,7 @@ export function InventoryBatchesPage() {
   const [adjustReason, setAdjustReason] = useState("");
   const [adjustLoading, setAdjustLoading] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!session) return;
     try {
       setLoading(true);
@@ -43,11 +43,11 @@ export function InventoryBatchesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     void loadData();
-  }, [session]);
+  }, [loadData]);
 
   // Apply filters client-side
   useEffect(() => {
