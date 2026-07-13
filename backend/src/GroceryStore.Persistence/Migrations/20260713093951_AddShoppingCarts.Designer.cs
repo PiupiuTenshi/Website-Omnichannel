@@ -4,6 +4,7 @@ using GroceryStore.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GroceryStore.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713093951_AddShoppingCarts")]
+    partial class AddShoppingCarts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -154,52 +157,6 @@ namespace GroceryStore.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("GroceryStore.Domain.Entities.InventoryReservation", b =>
-                {
-                    b.Property<Guid>("InventoryReservationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("InventoryBatchId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("OwnerSessionId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<Guid>("ProductVariantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("decimal(18,3)");
-
-                    b.Property<DateTime?>("ReleasedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("InventoryReservationId");
-
-                    b.HasIndex("InventoryBatchId");
-
-                    b.HasIndex("ProductVariantId");
-
-                    b.HasIndex("OwnerSessionId", "Status");
-
-                    b.HasIndex("Status", "ExpiresAtUtc");
-
-                    b.ToTable("InventoryReservations");
-                });
-
             modelBuilder.Entity("GroceryStore.Domain.Entities.InventoryTransaction", b =>
                 {
                     b.Property<Guid>("InventoryTransactionId")
@@ -237,127 +194,6 @@ namespace GroceryStore.Persistence.Migrations
                     b.HasIndex("ProductVariantId", "OccurredAtUtc");
 
                     b.ToTable("InventoryTransactions");
-                });
-
-            modelBuilder.Entity("GroceryStore.Domain.Entities.OnlineOrder", b =>
-                {
-                    b.Property<Guid>("OnlineOrderId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("BuyerUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeliveryAddress")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal?>("DistanceKm")
-                        .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)");
-
-                    b.Property<string>("GuestSessionId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ManagerMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("OrderCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("PaymentMethod")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PaymentStatus")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RecipientName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("RecipientPhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<decimal?>("ShippingFee")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Subtotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("Total")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("OnlineOrderId");
-
-                    b.HasIndex("OrderCode")
-                        .IsUnique();
-
-                    b.HasIndex("BuyerUserId", "CreatedAtUtc");
-
-                    b.HasIndex("GuestSessionId", "CreatedAtUtc");
-
-                    b.ToTable("OnlineOrders");
-                });
-
-            modelBuilder.Entity("GroceryStore.Domain.Entities.OnlineOrderItem", b =>
-                {
-                    b.Property<Guid>("OnlineOrderItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("LineTotal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("OnlineOrderId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ProductVariantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("decimal(18,3)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("OnlineOrderItemId");
-
-                    b.HasIndex("OnlineOrderId");
-
-                    b.HasIndex("ProductVariantId");
-
-                    b.ToTable("OnlineOrderItems");
                 });
 
             modelBuilder.Entity("GroceryStore.Domain.Entities.Order", b =>
@@ -1182,50 +1018,12 @@ namespace GroceryStore.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("GroceryStore.Domain.Entities.InventoryReservation", b =>
-                {
-                    b.HasOne("GroceryStore.Domain.Entities.InventoryBatch", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryBatchId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GroceryStore.Domain.Entities.ProductVariant", null)
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GroceryStore.Domain.Entities.InventoryTransaction", b =>
                 {
                     b.HasOne("GroceryStore.Domain.Entities.InventoryBatch", null)
                         .WithMany()
                         .HasForeignKey("InventoryBatchId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GroceryStore.Domain.Entities.ProductVariant", null)
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GroceryStore.Domain.Entities.OnlineOrder", b =>
-                {
-                    b.HasOne("GroceryStore.Persistence.Authentication.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("BuyerUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("GroceryStore.Domain.Entities.OnlineOrderItem", b =>
-                {
-                    b.HasOne("GroceryStore.Domain.Entities.OnlineOrder", null)
-                        .WithMany("Items")
-                        .HasForeignKey("OnlineOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("GroceryStore.Domain.Entities.ProductVariant", null)
@@ -1392,11 +1190,6 @@ namespace GroceryStore.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("GroceryStore.Domain.Entities.OnlineOrder", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("GroceryStore.Domain.Entities.Order", b =>

@@ -40,6 +40,16 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
+    public DbSet<ShoppingCart> ShoppingCarts => Set<ShoppingCart>();
+
+    public DbSet<ShoppingCartItem> ShoppingCartItems => Set<ShoppingCartItem>();
+
+    public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
+
+    public DbSet<OnlineOrder> OnlineOrders => Set<OnlineOrder>();
+
+    public DbSet<OnlineOrderItem> OnlineOrderItems => Set<OnlineOrderItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -51,6 +61,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureCatalog(modelBuilder);
         ConfigureInventory(modelBuilder);
         ConfigureOrdering(modelBuilder);
+        ConfigureShoppingCarts(modelBuilder);
+        ConfigureInventoryReservations(modelBuilder);
+        ConfigureOnlineOrders(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -314,6 +327,103 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
                 .WithMany()
                 .HasForeignKey(item => item.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureShoppingCarts(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ShoppingCart>(entity =>
+        {
+            entity.HasKey(cart => cart.ShoppingCartId);
+            entity.Property(cart => cart.SessionId).HasMaxLength(100);
+            entity.Property(cart => cart.UserId).HasMaxLength(450);
+            entity.Property(cart => cart.RowVersion).IsRowVersion();
+            entity.HasIndex(cart => cart.SessionId)
+                .IsUnique()
+                .HasFilter("[SessionId] IS NOT NULL AND [IsMerged] = 0");
+            entity.HasIndex(cart => cart.UserId)
+                .IsUnique()
+                .HasFilter("[UserId] IS NOT NULL AND [IsMerged] = 0");
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_ShoppingCarts_Owner",
+                "([SessionId] IS NOT NULL AND [UserId] IS NULL) OR ([SessionId] IS NULL AND [UserId] IS NOT NULL)"));
+            entity.HasMany(cart => cart.Items)
+                .WithOne()
+                .HasForeignKey(item => item.ShoppingCartId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(cart => cart.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ShoppingCartItem>(entity =>
+        {
+            entity.HasKey(item => item.ShoppingCartItemId);
+            entity.Property(item => item.Quantity).HasPrecision(18, 3);
+            entity.HasIndex(item => item.ShoppingCartId);
+            entity.HasIndex(item => new { item.ShoppingCartId, item.ProductVariantId }).IsUnique();
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(item => item.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureInventoryReservations(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InventoryReservation>(entity =>
+        {
+            entity.HasKey(reservation => reservation.InventoryReservationId);
+            entity.Property(reservation => reservation.OwnerSessionId).HasMaxLength(100).IsRequired();
+            entity.Property(reservation => reservation.Quantity).HasPrecision(18, 3);
+            entity.HasIndex(reservation => new { reservation.OwnerSessionId, reservation.Status });
+            entity.HasIndex(reservation => new { reservation.Status, reservation.ExpiresAtUtc });
+            entity.HasIndex(reservation => reservation.InventoryBatchId);
+            entity.HasOne<InventoryBatch>()
+                .WithMany()
+                .HasForeignKey(reservation => reservation.InventoryBatchId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ProductVariant>()
+                .WithMany()
+                .HasForeignKey(reservation => reservation.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureOnlineOrders(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OnlineOrder>(entity =>
+        {
+            entity.HasKey(order => order.OnlineOrderId);
+            entity.Property(order => order.OrderCode).HasMaxLength(50).IsRequired();
+            entity.Property(order => order.GuestSessionId).HasMaxLength(100).IsRequired();
+            entity.Property(order => order.BuyerUserId).HasMaxLength(450);
+            entity.Property(order => order.RecipientName).HasMaxLength(150).IsRequired();
+            entity.Property(order => order.RecipientPhoneNumber).HasMaxLength(20).IsRequired();
+            entity.Property(order => order.DeliveryAddress).HasMaxLength(500).IsRequired();
+            entity.Property(order => order.ManagerMessage).HasMaxLength(1000);
+            entity.Property(order => order.Subtotal).HasPrecision(18, 2);
+            entity.Property(order => order.ShippingFee).HasPrecision(18, 2);
+            entity.Property(order => order.Total).HasPrecision(18, 2);
+            entity.Property(order => order.DistanceKm).HasPrecision(8, 2);
+            entity.Property(order => order.RowVersion).IsRowVersion();
+            entity.HasIndex(order => order.OrderCode).IsUnique();
+            entity.HasIndex(order => new { order.GuestSessionId, order.CreatedAtUtc });
+            entity.HasIndex(order => new { order.BuyerUserId, order.CreatedAtUtc });
+            entity.HasMany(order => order.Items).WithOne().HasForeignKey(item => item.OnlineOrderId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(order => order.BuyerUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OnlineOrderItem>(entity =>
+        {
+            entity.HasKey(item => item.OnlineOrderItemId);
+            entity.Property(item => item.Quantity).HasPrecision(18, 3);
+            entity.Property(item => item.UnitPrice).HasPrecision(18, 2);
+            entity.Property(item => item.LineTotal).HasPrecision(18, 2);
+            entity.HasIndex(item => item.OnlineOrderId);
+            entity.HasIndex(item => item.ProductVariantId);
+            entity.HasOne<ProductVariant>().WithMany().HasForeignKey(item => item.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

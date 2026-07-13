@@ -6,5 +6,7 @@ public enum InventoryTransactionType
     AdjustmentIncrease,
     AdjustmentDecrease,
     Allocation,
-    ExpiryWriteOff
+    ExpiryWriteOff,
+    ReservationHold,
+    ReservationRelease
 }
