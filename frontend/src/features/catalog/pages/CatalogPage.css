@@ -1,69 +1,289 @@
 .catalog-page {
   display: grid;
-  gap: var(--space-xl);
-  padding-block: var(--space-xl);
+  gap: var(--space-lg);
+  padding-block: var(--space-lg);
+}
+
+/* Premium Grocery Hero Banner */
+.catalog-page__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-xl) var(--space-lg);
+  background: linear-gradient(135deg, #eaf6ed 0%, #f9fbf9 100%);
+  border: 1px solid rgba(37, 111, 58, 0.12);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.catalog-page__hero::after {
+  content: "";
+  position: absolute;
+  right: -5%;
+  bottom: -20%;
+  width: 15rem;
+  height: 15rem;
+  background: radial-gradient(circle, rgba(37, 111, 58, 0.05) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .catalog-page__hero p {
-  color: var(--color-primary-strong);
+  display: inline-flex;
+  background: var(--color-primary-strong);
+  color: var(--color-surface);
+  font-size: 0.75rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  margin: 0 0 var(--space-sm) 0;
+  box-shadow: 0 2px 8px rgba(24, 86, 43, 0.15);
 }
 
 .catalog-page__hero h1 {
-  max-width: 38rem;
   margin: 0;
-  font-size: clamp(1.75rem, 7vw, 3rem);
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  max-width: 32rem;
 }
 
+/* Filters & Search */
 .catalog-page__filters {
   display: grid;
   gap: var(--space-md);
+  background: var(--color-surface);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
-.catalog-page__filters label {
-  display: grid;
+.filter-input-group {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xs);
-  font-weight: 700;
 }
 
-.catalog-page__filters input,
-.catalog-page__filters select {
+.filter-input-group label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box input {
+  width: 100%;
   min-height: var(--touch-target-size);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding-inline: var(--space-sm);
+  border-radius: var(--radius-md);
+  padding-left: 2.5rem;
+  padding-right: var(--space-md);
+  font-size: 0.9375rem;
+  transition: all 0.2s ease-in-out;
 }
 
+.search-box input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 111, 58, 0.12);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.mobile-only-select select {
+  min-height: var(--touch-target-size);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding-inline: var(--space-md);
+  font-size: 0.9375rem;
+  background: var(--color-surface);
+  transition: all 0.2s ease;
+}
+
+.mobile-only-select select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+/* Scrollable Category Quick Tags */
+.catalog-page__category-tags {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-xs);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.catalog-page__category-tags::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 2.25rem;
+  padding: 0.25rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-tag:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Category Specific Color Schemes for Active tags */
+.category-tag.active {
+  color: var(--color-surface) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.category-tag.active.tag--veggies,
+.category-tag:hover.tag--veggies {
+  background-color: var(--color-cat-veggies);
+  border-color: var(--color-cat-veggies);
+  color: white;
+}
+
+.category-tag.active.tag--fruits,
+.category-tag:hover.tag--fruits {
+  background-color: var(--color-cat-fruits);
+  border-color: var(--color-cat-fruits);
+  color: white;
+}
+
+.category-tag.active.tag--meat,
+.category-tag:hover.tag--meat {
+  background-color: var(--color-cat-meat);
+  border-color: var(--color-cat-meat);
+  color: white;
+}
+
+.category-tag.active.tag--dairy,
+.category-tag:hover.tag--dairy {
+  background-color: var(--color-cat-dairy);
+  border-color: var(--color-cat-dairy);
+  color: white;
+}
+
+.category-tag.active.tag--beverages,
+.category-tag:hover.tag--beverages {
+  background-color: var(--color-cat-beverages);
+  border-color: var(--color-cat-beverages);
+  color: white;
+}
+
+.category-tag.active.tag--snacks,
+.category-tag:hover.tag--snacks {
+  background-color: var(--color-cat-snacks);
+  border-color: var(--color-cat-snacks);
+  color: white;
+}
+
+.category-tag.active:not([class*="tag--"]),
+.category-tag.active.tag--default {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* Products Grid */
 .catalog-page__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
 }
 
+/* Pagination */
 .catalog-page__pagination {
   display: flex;
   justify-content: center;
-  gap: var(--space-sm);
   align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .catalog-page__pagination button {
-  min-height: var(--touch-target-size);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
+  min-height: 2.5rem;
+  padding-inline: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
-  color: var(--color-primary-strong);
-  padding-inline: var(--space-md);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
+.catalog-page__pagination button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+.catalog-page__pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--space-md);
+  background: #fef2f2;
+  border-radius: var(--radius-md);
+}
+
+/* Responsiveness adjustments */
 @media (min-width: 36rem) {
   .catalog-page__grid {
-    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+    gap: var(--space-lg);
+  }
+  .catalog-page {
+    gap: var(--space-xl);
+    padding-block: var(--space-xl);
   }
 }
 
 @media (min-width: 48rem) {
   .catalog-page__filters {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 3fr;
+  }
+  .mobile-only-select {
+    display: none; /* Hide dropdown select on desktop in favor of category tags */
   }
 }

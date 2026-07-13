@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { StoreSettingsPage } from "../../features/admin";
 import { LoginPage, RegisterPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
 import { CatalogPage, ProductDetailPage, ProductFormPage } from "../../features/catalog";
+import { InventoryBatchesPage, InventoryReceivePage, LowStockPage, SuppliersPage } from "../../features/inventory";
 import { PublicLayout } from "../../layouts/PublicLayout";
 import { FoundationPage } from "../../pages/FoundationPage";
 import { NotFoundPage } from "../../pages/NotFoundPage";
@@ -18,7 +19,14 @@ const router = createBrowserRouter([
       { path: "verify", element: <VerifyAccountPage /> },
       {
         element: <RoleRouteGuard allowedRoles={["Admin", "Manager"]} />,
-        children: [{ path: "admin/store-settings", element: <StoreSettingsPage /> }, { path: "admin/products/new", element: <ProductFormPage /> }]
+        children: [
+          { path: "admin/store-settings", element: <StoreSettingsPage /> },
+          { path: "admin/products/new", element: <ProductFormPage /> },
+          { path: "admin/inventory/suppliers", element: <SuppliersPage /> },
+          { path: "admin/inventory/receive", element: <InventoryReceivePage /> },
+          { path: "admin/inventory/batches", element: <InventoryBatchesPage /> },
+          { path: "admin/inventory/low-stock", element: <LowStockPage /> }
+        ]
       },
       { path: "*", element: <NotFoundPage /> }
     ]

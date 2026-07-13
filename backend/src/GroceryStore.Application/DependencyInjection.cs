@@ -1,6 +1,7 @@
 using GroceryStore.Application.Features.Auth;
 using GroceryStore.Application.Features.StoreSettings;
 using GroceryStore.Application.Features.Catalog;
+using GroceryStore.Application.Features.Inventory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GroceryStore.Application;
@@ -13,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<StoreSettingsService>();
         services.AddScoped<CatalogService>();
         services.AddScoped<ProductImageService>();
+        services.AddScoped<InventoryService>();
         return services;
     }
 }
