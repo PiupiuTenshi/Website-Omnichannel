@@ -46,6 +46,9 @@ public static class DependencyInjection
         services.AddScoped<ICatalogRepository, CatalogRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IPosRepository, PosRepository>();
+        services.AddScoped<IShoppingCartRepository, ShoppingCartRepository>();
+        services.AddScoped<IInventoryReservationRepository, InventoryReservationRepository>();
+        services.AddScoped<IOnlineOrderRepository, OnlineOrderRepository>();
         services.Configure<DemoIdentityOptions>(configuration.GetSection(DemoIdentityOptions.SECTION_NAME));
         services.AddScoped<DemoIdentitySeeder>();
 
