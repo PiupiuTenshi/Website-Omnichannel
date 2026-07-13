@@ -54,6 +54,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
 
+    public DbSet<OnlineOrderAllocation> OnlineOrderAllocations => Set<OnlineOrderAllocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -69,6 +71,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureInventoryReservations(modelBuilder);
         ConfigureOnlineOrders(modelBuilder);
         ConfigureReviewsAndReturns(modelBuilder);
+        ConfigureOnlineOrderAllocations(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -459,6 +462,20 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasOne<OnlineOrderItem>().WithMany().HasForeignKey(request => request.OnlineOrderItemId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ProductVariant>().WithMany().HasForeignKey(request => request.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(request => request.BuyerUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureOnlineOrderAllocations(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OnlineOrderAllocation>(entity =>
+        {
+            entity.HasKey(allocation => allocation.OnlineOrderAllocationId);
+            entity.Property(allocation => allocation.Quantity).HasPrecision(18, 3);
+            entity.HasIndex(allocation => allocation.OnlineOrderItemId);
+            entity.HasIndex(allocation => allocation.InventoryBatchId);
+            entity.HasOne<OnlineOrder>().WithMany().HasForeignKey(allocation => allocation.OnlineOrderId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<OnlineOrderItem>().WithMany().HasForeignKey(allocation => allocation.OnlineOrderItemId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<InventoryBatch>().WithMany().HasForeignKey(allocation => allocation.InventoryBatchId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

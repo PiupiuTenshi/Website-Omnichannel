@@ -63,6 +63,7 @@ public sealed class OnlineOrderService(
         {
             await inventoryReservationService.ReserveCartAsync(command.GuestSessionId, command.BuyerUserId, cancellationToken, false);
             await onlineOrderRepository.AddAsync(order, cancellationToken);
+            await onlineOrderRepository.CaptureAllocationsAsync(order, command.GuestSessionId, cancellationToken);
             await onlineOrderRepository.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
         return ToResponse(order);
