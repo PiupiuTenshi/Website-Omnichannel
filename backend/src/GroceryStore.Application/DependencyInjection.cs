@@ -4,6 +4,9 @@ using GroceryStore.Application.Features.Catalog;
 using GroceryStore.Application.Features.Inventory;
 using GroceryStore.Application.Features.Pos;
 using GroceryStore.Application.Features.Orders;
+using GroceryStore.Application.Features.Reviews;
+using GroceryStore.Application.Features.Returns;
+using GroceryStore.Application.Features.Reporting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GroceryStore.Application;
@@ -21,6 +24,9 @@ public static class DependencyInjection
         services.AddScoped<ShoppingCartService>();
         services.AddScoped<InventoryReservationService>();
         services.AddScoped<OnlineOrderService>();
+        services.AddScoped<ReviewService>();
+        services.AddScoped<ReturnService>();
+        services.AddScoped<ReportingService>();
         return services;
     }
 }
