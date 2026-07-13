@@ -12,6 +12,20 @@ public sealed class OnlineOrderRepository(ApplicationDbContext context) : IOnlin
 
     public Task AddAsync(OnlineOrder order, CancellationToken cancellationToken) => context.OnlineOrders.AddAsync(order, cancellationToken).AsTask();
 
+    public async Task CaptureAllocationsAsync(OnlineOrder order, string guestSessionId, CancellationToken cancellationToken)
+    {
+        var reservations = await context.InventoryReservations
+            .Where(reservation => reservation.OwnerSessionId == guestSessionId && reservation.Status == GroceryStore.Domain.Enums.InventoryReservationStatus.Active)
+            .ToListAsync(cancellationToken);
+        foreach (var reservation in reservations)
+        {
+            var item = order.Items.SingleOrDefault(candidate => candidate.ProductVariantId == reservation.ProductVariantId)
+                ?? throw new InvalidOperationException("Reservation does not match an online order item.");
+            await context.OnlineOrderAllocations.AddAsync(new OnlineOrderAllocation(order.OnlineOrderId, item.OnlineOrderItemId, reservation.InventoryBatchId, reservation.Quantity), cancellationToken);
+            reservation.Convert();
+        }
+    }
+
     public Task<OnlineOrder?> GetAccessibleAsync(Guid onlineOrderId, string guestSessionId, string? buyerUserId, CancellationToken cancellationToken) =>
         context.OnlineOrders.Include(order => order.Items).SingleOrDefaultAsync(order =>
             order.OnlineOrderId == onlineOrderId &&

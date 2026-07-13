@@ -50,6 +50,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<OnlineOrderItem> OnlineOrderItems => Set<OnlineOrderItem>();
 
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+
+    public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
+
+    public DbSet<OnlineOrderAllocation> OnlineOrderAllocations => Set<OnlineOrderAllocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -64,6 +70,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         ConfigureShoppingCarts(modelBuilder);
         ConfigureInventoryReservations(modelBuilder);
         ConfigureOnlineOrders(modelBuilder);
+        ConfigureReviewsAndReturns(modelBuilder);
+        ConfigureOnlineOrderAllocations(modelBuilder);
     }
 
     private static void ConfigureUsers(ModelBuilder modelBuilder)
@@ -424,6 +432,50 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasIndex(item => item.OnlineOrderId);
             entity.HasIndex(item => item.ProductVariantId);
             entity.HasOne<ProductVariant>().WithMany().HasForeignKey(item => item.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureReviewsAndReturns(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductReview>(entity =>
+        {
+            entity.HasKey(review => review.ProductReviewId);
+            entity.Property(review => review.BuyerUserId).HasMaxLength(450).IsRequired();
+            entity.Property(review => review.Content).HasMaxLength(2000).IsRequired();
+            entity.Property(review => review.ManagerReply).HasMaxLength(2000);
+            entity.HasIndex(review => review.OnlineOrderItemId).IsUnique();
+            entity.HasIndex(review => review.ProductVariantId);
+            entity.HasOne<OnlineOrderItem>().WithMany().HasForeignKey(review => review.OnlineOrderItemId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ProductVariant>().WithMany().HasForeignKey(review => review.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(review => review.BuyerUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(table => table.HasCheckConstraint("CK_ProductReviews_Rating", "[Rating] BETWEEN 1 AND 5"));
+        });
+
+        modelBuilder.Entity<ReturnRequest>(entity =>
+        {
+            entity.HasKey(request => request.ReturnRequestId);
+            entity.Property(request => request.BuyerUserId).HasMaxLength(450).IsRequired();
+            entity.Property(request => request.Description).HasMaxLength(2000).IsRequired();
+            entity.Property(request => request.ManagerNote).HasMaxLength(2000);
+            entity.HasIndex(request => new { request.BuyerUserId, request.CreatedAtUtc });
+            entity.HasIndex(request => request.OnlineOrderItemId);
+            entity.HasOne<OnlineOrderItem>().WithMany().HasForeignKey(request => request.OnlineOrderItemId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ProductVariant>().WithMany().HasForeignKey(request => request.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(request => request.BuyerUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureOnlineOrderAllocations(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OnlineOrderAllocation>(entity =>
+        {
+            entity.HasKey(allocation => allocation.OnlineOrderAllocationId);
+            entity.Property(allocation => allocation.Quantity).HasPrecision(18, 3);
+            entity.HasIndex(allocation => allocation.OnlineOrderItemId);
+            entity.HasIndex(allocation => allocation.InventoryBatchId);
+            entity.HasOne<OnlineOrder>().WithMany().HasForeignKey(allocation => allocation.OnlineOrderId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<OnlineOrderItem>().WithMany().HasForeignKey(allocation => allocation.OnlineOrderItemId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<InventoryBatch>().WithMany().HasForeignKey(allocation => allocation.InventoryBatchId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 
