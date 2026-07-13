@@ -14,7 +14,7 @@ namespace GroceryStore.IntegrationTests;
 
 public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private static readonly string DockerConnectionString = GetDockerConnectionString();
+    private static readonly string DOCKER_CONNECTION_STRING = GetDockerConnectionString();
 
     [Fact]
     public async Task Adjust_CreatesTransactionAndDoesNotModifyHistoryAsync()
@@ -218,7 +218,7 @@ public sealed class InventoryConcurrencyAndAdjustmentTests(TestWebApplicationFac
                 services.Remove(descriptor);
             }
 
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(DockerConnectionString));
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(DOCKER_CONNECTION_STRING));
             services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = TestAuthenticationHandler.SCHEME_NAME;
