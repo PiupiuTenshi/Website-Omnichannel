@@ -38,9 +38,29 @@ jobs:
             throw "MONSTERASP_APPSETTINGS_PRODUCTION is not configured."
           }
           [System.IO.File]::WriteAllText("backend/src/GroceryStore.Api/appsettings.Production.json", $env:PRODUCTION_SETTINGS)
+          [xml]$publishSettings = $env:PUBLISH_PROFILE
+          $webDeployProfile = @($publishSettings.publishData.publishProfile | Where-Object { $_.publishMethod -eq "MSDeploy" }) | Select-Object -First 1
+          if ($null -eq $webDeployProfile) {
+            throw "MONSTERASP_PUBLISH_PROFILE must contain an MSDeploy publish profile."
+          }
+
           $profileDirectory = "backend/src/GroceryStore.Api/Properties/PublishProfiles"
           New-Item -ItemType Directory -Force -Path $profileDirectory | Out-Null
-          [System.IO.File]::WriteAllText((Join-Path $profileDirectory "MonsterAsp.pubxml"), $env:PUBLISH_PROFILE)
+          $profileXml = @"
+          <Project>
+            <PropertyGroup>
+              <WebPublishMethod>MSDeploy</WebPublishMethod>
+              <PublishProvider>WebDeploy</PublishProvider>
+              <LastUsedBuildConfiguration>Release</LastUsedBuildConfiguration>
+              <MSDeployServiceURL>$($webDeployProfile.publishUrl)</MSDeployServiceURL>
+              <DeployIisAppPath>$($webDeployProfile.msdeploySite)</DeployIisAppPath>
+              <UserName>$($webDeployProfile.userName)</UserName>
+              <Password>$($webDeployProfile.userPWD)</Password>
+              <AllowUntrustedCertificate>True</AllowUntrustedCertificate>
+            </PropertyGroup>
+          </Project>
+          "@
+          [System.IO.File]::WriteAllText((Join-Path $profileDirectory "MonsterAsp.pubxml"), $profileXml)
       - name: Publish to MonsterASP.NET through Web Deploy
         run: dotnet publish backend/src/GroceryStore.Api/GroceryStore.Api.csproj --configuration Release --no-restore -p:PublishProfile=MonsterAsp
       - name: Verify public health endpoint
