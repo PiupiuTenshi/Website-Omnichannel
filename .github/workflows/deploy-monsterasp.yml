@@ -1,0 +1,50 @@
+name: deploy-monsterasp
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-monsterasp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore
+        run: dotnet restore backend/GroceryStore.sln
+      - name: Build and test
+        run: dotnet test backend/GroceryStore.sln --configuration Release --no-restore
+      - name: Create protected Web Deploy profile
+        shell: pwsh
+        env:
+          PUBLISH_PROFILE: ${{ secrets.MONSTERASP_PUBLISH_PROFILE }}
+          PRODUCTION_SETTINGS: ${{ secrets.MONSTERASP_APPSETTINGS_PRODUCTION }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:PUBLISH_PROFILE)) {
+            throw "MONSTERASP_PUBLISH_PROFILE is not configured."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PRODUCTION_SETTINGS)) {
+            throw "MONSTERASP_APPSETTINGS_PRODUCTION is not configured."
+          }
+          [System.IO.File]::WriteAllText("backend/src/GroceryStore.Api/appsettings.Production.json", $env:PRODUCTION_SETTINGS)
+          $profileDirectory = "backend/src/GroceryStore.Api/Properties/PublishProfiles"
+          New-Item -ItemType Directory -Force -Path $profileDirectory | Out-Null
+          [System.IO.File]::WriteAllText((Join-Path $profileDirectory "MonsterAsp.pubxml"), $env:PUBLISH_PROFILE)
+      - name: Publish to MonsterASP.NET through Web Deploy
+        run: dotnet publish backend/src/GroceryStore.Api/GroceryStore.Api.csproj --configuration Release --no-restore -p:PublishProfile=MonsterAsp
+      - name: Verify public health endpoint
+        shell: pwsh
+        run: |
+          $response = Invoke-WebRequest -Uri "https://piupiu.runasp.net/health" -UseBasicParsing -TimeoutSec 60
+          if ($response.StatusCode -ne 200) { throw "Health endpoint returned $($response.StatusCode)." }
