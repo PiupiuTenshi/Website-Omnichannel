@@ -282,4 +282,86 @@ BEGIN
     VALUES (NEWID(), @BatchNoodle, @VarNoodle, 0, 100.000, 'Initial receipt', DATEADD(month, -6, @now), @now);
 END
 
+/* Give every remaining catalog item a purchasable demo batch.
+   The four batches above remain intentionally distinct for low-stock,
+   near-expiry and expired-stock verification. */
+DECLARE @DemoBatches TABLE
+(
+    InventoryBatchId uniqueidentifier NOT NULL,
+    ProductVariantId uniqueidentifier NOT NULL,
+    Quantity decimal(18,3) NOT NULL
+);
+
+INSERT INTO InventoryBatches
+(
+    InventoryBatchId,
+    ProductVariantId,
+    SupplierId,
+    InitialQuantity,
+    AvailableQuantity,
+    UnitCost,
+    ReceivedAtUtc,
+    ManufacturedAtUtc,
+    ExpiresAtUtc,
+    Status,
+    CreatedAtUtc
+)
+OUTPUT INSERTED.InventoryBatchId, INSERTED.ProductVariantId, INSERTED.InitialQuantity
+INTO @DemoBatches (InventoryBatchId, ProductVariantId, Quantity)
+SELECT
+    NEWID(),
+    variantItem.ProductVariantId,
+    preferredSupplier.SupplierId,
+    CASE WHEN unitItem.AllowsDecimal = 1 THEN 50.000 ELSE 50.000 END,
+    CASE WHEN unitItem.AllowsDecimal = 1 THEN 50.000 ELSE 50.000 END,
+    ROUND(variantItem.SellingPrice * 0.60, 2),
+    @now,
+    @now,
+    CASE
+        WHEN categoryItem.Slug IN ('rau-cu', 'trai-cay', 'thit-ca', 'sua-trung') THEN DATEADD(day, 7, @now)
+        WHEN categoryItem.Slug = 'dong-lanh' THEN DATEADD(day, 90, @now)
+        ELSE DATEADD(day, 365, @now)
+    END,
+    0,
+    @now
+FROM ProductVariants variantItem
+JOIN Products productItem ON productItem.ProductId = variantItem.ProductId
+JOIN Categories categoryItem ON categoryItem.CategoryId = productItem.CategoryId
+JOIN UnitsOfMeasure unitItem ON unitItem.UnitOfMeasureId = productItem.UnitOfMeasureId
+OUTER APPLY
+(
+    SELECT TOP 1 productSupplier.SupplierId
+    FROM ProductSuppliers productSupplier
+    WHERE productSupplier.ProductId = productItem.ProductId
+    ORDER BY productSupplier.IsPreferred DESC, productSupplier.CreatedAtUtc
+) preferredSupplier
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM InventoryBatches existingBatch
+    WHERE existingBatch.ProductVariantId = variantItem.ProductVariantId
+);
+
+INSERT INTO InventoryTransactions
+(
+    InventoryTransactionId,
+    InventoryBatchId,
+    ProductVariantId,
+    Type,
+    QuantityDelta,
+    Reason,
+    OccurredAtUtc,
+    CreatedAtUtc
+)
+SELECT
+    NEWID(),
+    demoBatch.InventoryBatchId,
+    demoBatch.ProductVariantId,
+    0,
+    demoBatch.Quantity,
+    'Demo catalog initial receipt',
+    @now,
+    @now
+FROM @DemoBatches demoBatch;
+
 COMMIT TRANSACTION;

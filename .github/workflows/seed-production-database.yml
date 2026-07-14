@@ -1,0 +1,25 @@
+name: seed-production-database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type SEED_PRODUCTION to run the idempotent catalog seed"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    if: ${{ inputs.confirmation == 'SEED_PRODUCTION' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply idempotent catalog seed
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
+          path: database/seed.sql
