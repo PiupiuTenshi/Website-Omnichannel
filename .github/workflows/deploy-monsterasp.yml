@@ -2,12 +2,6 @@ name: deploy-monsterasp
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - develop
-    paths:
-      - "backend/**"
-      - ".github/workflows/deploy-monsterasp.yml"
 
 permissions:
   contents: read
