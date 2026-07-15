@@ -8,7 +8,7 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (!builder.Environment.IsEnvironment("Testing"))
+if (builder.Environment.IsDevelopment())
 {
     EnvironmentFileConfiguration.AddLocalEnvironmentFile(builder.Configuration, builder.Environment.ContentRootPath);
 }
