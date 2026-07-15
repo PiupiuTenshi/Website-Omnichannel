@@ -1,4 +1,5 @@
 /* Pre-release catalog seed. Run only after EF Core migrations. */
+:ON ERROR EXIT
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 SET QUOTED_IDENTIFIER ON;
