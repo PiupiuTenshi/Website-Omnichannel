@@ -11,11 +11,10 @@ RUN dotnet publish backend/src/GroceryStore.Api/GroceryStore.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-ENV ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 COPY --from=build /app/publish ./
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "GroceryStore.Api.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} exec dotnet GroceryStore.Api.dll"]
