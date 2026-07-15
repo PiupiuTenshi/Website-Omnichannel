@@ -24,6 +24,7 @@ jobs:
         env:
           PUBLISH_PROFILE: ${{ secrets.MONSTERASP_PUBLISH_PROFILE }}
           PRODUCTION_SETTINGS: ${{ secrets.MONSTERASP_APPSETTINGS_PRODUCTION }}
+          PRODUCTION_SQL_CONNECTION_STRING: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:PUBLISH_PROFILE)) {
             throw "MONSTERASP_PUBLISH_PROFILE is not configured."
@@ -31,7 +32,24 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:PRODUCTION_SETTINGS)) {
             throw "MONSTERASP_APPSETTINGS_PRODUCTION is not configured."
           }
-          [System.IO.File]::WriteAllText("backend/src/GroceryStore.Api/appsettings.Production.json", $env:PRODUCTION_SETTINGS)
+          if ([string]::IsNullOrWhiteSpace($env:PRODUCTION_SQL_CONNECTION_STRING)) {
+            throw "MONSTERASP_SQL_CONNECTION_STRING is not configured."
+          }
+
+          try {
+            $productionSettings = $env:PRODUCTION_SETTINGS | ConvertFrom-Json -ErrorAction Stop
+          }
+          catch {
+            throw "MONSTERASP_APPSETTINGS_PRODUCTION must contain valid JSON."
+          }
+
+          if ($null -eq $productionSettings.ConnectionStrings) {
+            $productionSettings | Add-Member -NotePropertyName "ConnectionStrings" -NotePropertyValue ([pscustomobject]@{})
+          }
+          $productionSettings.ConnectionStrings | Add-Member -Force -NotePropertyName "DefaultConnection" -NotePropertyValue $env:PRODUCTION_SQL_CONNECTION_STRING
+          [System.IO.File]::WriteAllText(
+            "backend/src/GroceryStore.Api/appsettings.Production.json",
+            ($productionSettings | ConvertTo-Json -Depth 20))
           [xml]$publishSettings = $env:PUBLISH_PROFILE
           $webDeployProfile = @($publishSettings.publishData.publishProfile | Where-Object { $_.publishMethod -eq "MSDeploy" }) | Select-Object -First 1
           if ($null -eq $webDeployProfile) {
