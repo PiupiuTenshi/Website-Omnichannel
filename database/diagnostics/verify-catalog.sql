@@ -1,3 +1,4 @@
+:ON ERROR EXIT
 SET NOCOUNT ON;
 
 SELECT DB_NAME() AS DatabaseName;
