@@ -1,0 +1,25 @@
+name: diagnose-production-catalog
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DIAGNOSE_PRODUCTION to run read-only catalog diagnostics"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: ${{ inputs.confirmation == 'DIAGNOSE_PRODUCTION' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run read-only catalog diagnostics
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
+          path: database/diagnostics/verify-catalog.sql
