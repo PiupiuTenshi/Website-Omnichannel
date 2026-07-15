@@ -46,7 +46,8 @@ jobs:
           if ($null -eq $productionSettings.ConnectionStrings) {
             $productionSettings | Add-Member -NotePropertyName "ConnectionStrings" -NotePropertyValue ([pscustomobject]@{})
           }
-          $productionSettings.ConnectionStrings | Add-Member -Force -NotePropertyName "DefaultConnection" -NotePropertyValue $env:PRODUCTION_SQL_CONNECTION_STRING
+          $connectionString = "$($env:PRODUCTION_SQL_CONNECTION_STRING);TrustServerCertificate=True"
+          $productionSettings.ConnectionStrings | Add-Member -Force -NotePropertyName "DefaultConnection" -NotePropertyValue $connectionString
           [System.IO.File]::WriteAllText(
             "backend/src/GroceryStore.Api/appsettings.Production.json",
             ($productionSettings | ConvertTo-Json -Depth 20))
