@@ -35,9 +35,10 @@ jobs:
       - name: Apply EF Core migrations
         env:
           ASPNETCORE_ENVIRONMENT: Production
-          ConnectionStrings__DefaultConnection: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
-        run: >-
-          dotnet ef database update
-          --project backend/src/GroceryStore.Persistence/GroceryStore.Persistence.csproj
-          --startup-project backend/src/GroceryStore.Api/GroceryStore.Api.csproj
-          --configuration Release
+          PRODUCTION_SQL_CONNECTION_STRING: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
+        run: |
+          export ConnectionStrings__DefaultConnection="${PRODUCTION_SQL_CONNECTION_STRING};TrustServerCertificate=True"
+          dotnet ef database update \
+            --project backend/src/GroceryStore.Persistence/GroceryStore.Persistence.csproj \
+            --startup-project backend/src/GroceryStore.Api/GroceryStore.Api.csproj \
+            --configuration Release
