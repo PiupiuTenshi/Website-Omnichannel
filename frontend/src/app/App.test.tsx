@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 
 describe("App", () => {
-  it("renders the foundation smoke page", () => {
+  it("renders the foundation smoke page", async () => {
     render(<App />);
 
-    expect(screen.getByRole("link", { name: "Tạp hóa chị Tỏ" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Nông sản sạch & Nhu yếu phẩm tươi ngon mỗi ngày" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Tạp hóa chị Tỏ" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Nông sản sạch & Nhu yếu phẩm tươi ngon mỗi ngày" })).toBeInTheDocument();
   });
 });
