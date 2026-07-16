@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
 import { confirmEmail, confirmPhone, loginAccount, logoutAccount, registerAccount } from "../api/authApi";
+import { mergeGuestCart, startNewGuestCartSession } from "../../cart";
 import type { AuthSession, RegisterPayload } from "../types/authTypes";
 import { AuthContext } from "./authContext";
 import { createAuthSession, loadAuthSession, saveAuthSession } from "./authSession";
@@ -16,6 +17,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const nextSession = createAuthSession(response);
     saveAuthSession(nextSession);
     setSession(nextSession);
+    try {
+      await mergeGuestCart(nextSession.accessToken);
+    } catch {
+      // A failed merge must not prevent a verified user from signing in.
+    } finally {
+      startNewGuestCartSession();
+    }
   }, []);
 
   const logout = useCallback(async () => {
@@ -25,6 +33,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       } finally {
         saveAuthSession(null);
         setSession(null);
+        startNewGuestCartSession();
       }
     }
   }, [session]);
