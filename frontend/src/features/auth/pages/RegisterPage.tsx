@@ -20,17 +20,17 @@ export function RegisterPage() {
     setErrorMessage("");
 
     if (regMethod === "email" && !email.trim()) {
-      setErrorMessage("Please enter your email address.");
+      setErrorMessage("Vui lòng nhập địa chỉ email của bạn.");
       return;
     }
 
     if (regMethod === "phone" && !phoneNumber.trim()) {
-      setErrorMessage("Please enter your phone number.");
+      setErrorMessage("Vui lòng nhập số điện thoại của bạn.");
       return;
     }
 
     if (password.length < 8) {
-      setErrorMessage("Password must contain at least eight characters.");
+      setErrorMessage("Mật khẩu phải chứa ít nhất 8 ký tự.");
       return;
     }
 
@@ -43,7 +43,7 @@ export function RegisterPage() {
       });
       navigate(`/verify?userId=${encodeURIComponent(response.userId)}`, { replace: true });
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "Unable to create your account right now.");
+      setErrorMessage(error instanceof ApiError ? error.message : "Không thể tạo tài khoản vào lúc này.");
     } finally {
       setIsSubmitting(false);
     }
@@ -53,8 +53,8 @@ export function RegisterPage() {
     <section className="auth-page app-container" aria-labelledby="register-heading">
       <div className="auth-card">
         <header className="auth-card__header">
-          <h1 className="auth-card__title" id="register-heading">Create account</h1>
-          <p className="auth-card__description">Choose your registration method below.</p>
+          <h1 className="auth-card__title" id="register-heading">Đăng ký tài khoản</h1>
+          <p className="auth-card__description">Chọn phương thức đăng ký bên dưới.</p>
         </header>
 
         <div className="auth-tabs" role="tablist">
@@ -82,14 +82,14 @@ export function RegisterPage() {
               setErrorMessage("");
             }}
           >
-            Phone Number
+            Số điện thoại
           </button>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {regMethod === "email" ? (
             <label className="auth-form__field" htmlFor="register-email">
-              <span>Email address</span>
+              <span>Địa chỉ Email</span>
               <input
                 className="auth-form__input"
                 id="register-email"
@@ -102,7 +102,7 @@ export function RegisterPage() {
             </label>
           ) : (
             <label className="auth-form__field" htmlFor="register-phone">
-              <span>Phone number</span>
+              <span>Số điện thoại</span>
               <input
                 className="auth-form__input"
                 id="register-phone"
@@ -115,7 +115,7 @@ export function RegisterPage() {
             </label>
           )}
           <label className="auth-form__field" htmlFor="register-password">
-            <span>Password</span>
+            <span>Mật khẩu</span>
             <input
               className="auth-form__input"
               id="register-password"
@@ -128,10 +128,10 @@ export function RegisterPage() {
           </label>
           {errorMessage && <p className="auth-form__message" role="alert">{errorMessage}</p>}
           <button className="auth-form__submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating account…" : "Create account"}
+            {isSubmitting ? "Đang đăng ký…" : "Đăng ký"}
           </button>
         </form>
-        <p className="auth-card__footer">Already have an account? <Link to="/login">Sign in</Link>.</p>
+        <p className="auth-card__footer">Đã có tài khoản? <Link to="/login">Đăng nhập</Link>.</p>
       </div>
     </section>
   );

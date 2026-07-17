@@ -31,7 +31,21 @@ export function ManagerDashboardPage() {
         setLowStockItems(loadedLowStock);
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu Manager Dashboard:", err);
-        setError("Không thể tải đầy đủ dữ liệu thống kê từ hệ thống.");
+        // Fallback to high-quality demo dataset
+        setSuppliers([
+          { supplierId: "s1", name: "Hợp tác xã rau sạch Đà Lạt", contactName: "Nguyễn Văn A", phoneNumber: "0912345678", email: "contact@dalatclean.vn", address: "Đà Lạt, Lâm Đồng", isActive: true },
+          { supplierId: "s2", name: "Công ty Cổ phần Nông sản Việt", contactName: "Trần Thị B", phoneNumber: "0987654321", email: "sales@nongsanviet.com", address: "Hóc Môn, TP. HCM", isActive: true }
+        ]);
+        setBatches([
+          { inventoryBatchId: "b1", productVariantId: "v1", supplierId: "s1", initialQuantity: 100, availableQuantity: 45, unitCost: 15000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 5*24*60*60*1000).toISOString(), status: 0 },
+          { inventoryBatchId: "b2", productVariantId: "v2", supplierId: "s2", initialQuantity: 50, availableQuantity: 0, unitCost: 35000, receivedAtUtc: new Date(Date.now() - 7*24*60*60*1000).toISOString(), manufacturedAtUtc: new Date(Date.now() - 8*24*60*60*1000).toISOString(), expiresAtUtc: new Date(Date.now() - 1*24*60*60*1000).toISOString(), status: 2 },
+          { inventoryBatchId: "b3", productVariantId: "v3", supplierId: "s1", initialQuantity: 80, availableQuantity: 15, unitCost: 12000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 3*24*60*60*1000).toISOString(), status: 0 }
+        ]);
+        setLowStockItems([
+          { productVariantId: "v3", productName: "Cải ngọt hữu cơ", variantName: "Bó 500g", sku: "CN-OR-500G", unitCode: "KG", availableQuantity: 2, suggestedPurchaseQuantity: 3 },
+          { productVariantId: "v4", productName: "Cà chua Beef", variantName: "Tiêu chuẩn", sku: "CT-BF-STD", unitCode: "KG", availableQuantity: 3, suggestedPurchaseQuantity: 2 }
+        ]);
+        setError("Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu để bạn trải nghiệm.");
       } finally {
         setIsLoading(false);
       }
@@ -49,6 +63,7 @@ export function ManagerDashboardPage() {
   // Calculate expired batches (status 3 or checking date comparison)
   const expiredBatchesCount = batches.filter(b => b.status === 3 || (b.expiresAtUtc && new Date(b.expiresAtUtc) < new Date())).length;
   const lowStockAlertCount = lowStockItems.length;
+  const discountedBatchesCount = batches.filter(b => b.compareAtPrice !== null && b.compareAtPrice > b.sellingPrice).length;
 
   return (
     <div className="manager-dashboard">
@@ -116,6 +131,21 @@ export function ManagerDashboardPage() {
 
         <div className="manager-dashboard__stat-card">
           <div className="manager-dashboard__stat-header">
+            <span className="manager-dashboard__stat-title">Lô hàng giảm giá</span>
+            <div className="manager-dashboard__stat-icon" style={{ color: "var(--color-primary-strong)" }}>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+          </div>
+          <div className="manager-dashboard__stat-value">
+            {isLoading ? "..." : discountedBatchesCount}
+          </div>
+          <p className="manager-dashboard__stat-desc">Các lô hàng hiện tại đang áp dụng ưu đãi giảm giá.</p>
+        </div>
+
+        <div className="manager-dashboard__stat-card">
+          <div className="manager-dashboard__stat-header">
             <span className="manager-dashboard__stat-title">Tổng số lô hàng</span>
             <div className="manager-dashboard__stat-icon">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -138,7 +168,7 @@ export function ManagerDashboardPage() {
             <h2 className="manager-dashboard__card-title" id="quick-actions-heading">Lối tắt thao tác nhanh</h2>
           </header>
           <div className="manager-dashboard__actions-grid">
-            <Link to="/admin/products/new" className="manager-dashboard__action-button">
+            <Link to="/manager/products/new" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -151,7 +181,19 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/receive" className="manager-dashboard__action-button">
+            <Link to="/manager/promotions" className="manager-dashboard__action-button">
+              <div className="manager-dashboard__action-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <div className="manager-dashboard__action-text">
+                <h3>Thiết lập giảm giá</h3>
+                <p>Điều chỉnh giá bán khuyến mãi và giá so sánh của sản phẩm.</p>
+              </div>
+            </Link>
+
+            <Link to="/manager/inventory/receive" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -165,7 +207,7 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/suppliers" className="manager-dashboard__action-button">
+            <Link to="/manager/inventory/suppliers" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -178,7 +220,7 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/batches" className="manager-dashboard__action-button">
+            <Link to="/manager/inventory/batches" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="8" y1="6" x2="21" y2="6" />
@@ -198,7 +240,7 @@ export function ManagerDashboardPage() {
         <section className="manager-dashboard__card" aria-labelledby="low-stock-heading">
           <header className="manager-dashboard__card-header">
             <h2 className="manager-dashboard__card-title" id="low-stock-heading">Danh sách cần nhập gấp</h2>
-            <Link to="/admin/inventory/low-stock" className="manager-dashboard__card-link">Xem tất cả</Link>
+            <Link to="/manager/inventory/low-stock" className="manager-dashboard__card-link">Xem tất cả</Link>
           </header>
           
           {isLoading ? (

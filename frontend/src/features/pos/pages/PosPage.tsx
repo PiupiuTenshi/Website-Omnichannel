@@ -246,27 +246,33 @@ export function PosPage() {
             </div>
             
             {/* Search Results */}
-            {products.length > 0 && (
+            {query.trim().length > 0 && (
               <div className="pos-search-results">
-                {products.map(p => (
-                  <button
-                    key={p.productVariantId}
-                    type="button"
-                    className="pos-search-item"
-                    onClick={() => addProductToCart(p)}
-                  >
-                    <div className="pos-search-item__info">
-                      <strong className="pos-search-item__name">{p.productName}</strong>
-                      <span className="pos-search-item__variant">{p.variantName} ({p.sku})</span>
-                    </div>
-                    <div className="pos-search-item__pricing">
-                      <span className="pos-search-item__price">{p.price.toLocaleString()} đ / {p.unitCode}</span>
-                      <span className={`pos-search-item__stock ${p.availableQuantity <= 5 ? 'text-danger font-bold' : ''}`}>
-                        Tồn: {p.availableQuantity}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                {products.length > 0 ? (
+                  products.map(p => (
+                    <button
+                      key={p.productVariantId}
+                      type="button"
+                      className="pos-search-item"
+                      onClick={() => addProductToCart(p)}
+                    >
+                      <div className="pos-search-item__info">
+                        <strong className="pos-search-item__name">{p.productName}</strong>
+                        <span className="pos-search-item__variant">{p.variantName} ({p.sku})</span>
+                      </div>
+                      <div className="pos-search-item__pricing">
+                        <span className="pos-search-item__price">{p.price.toLocaleString()} đ / {p.unitCode}</span>
+                        <span className={`pos-search-item__stock ${p.availableQuantity <= 5 ? 'text-danger font-bold' : ''}`}>
+                          Tồn: {p.availableQuantity}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="pos-search-no-results">
+                    Không tìm thấy sản phẩm
+                  </div>
+                )}
               </div>
             )}
           </div>

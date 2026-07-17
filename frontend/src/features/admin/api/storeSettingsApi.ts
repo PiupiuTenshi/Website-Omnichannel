@@ -7,6 +7,10 @@ export function getStoreSettings(accessToken: string): Promise<StoreSettings> {
   });
 }
 
+export function getPublicStoreSettings(): Promise<StoreSettings> {
+  return requestJson<StoreSettings>("/store-settings/public");
+}
+
 export function updateStoreSettings(accessToken: string, draft: StoreSettingsDraft): Promise<StoreSettings> {
   return requestJson<StoreSettings>("/store-settings", {
     method: "PUT",

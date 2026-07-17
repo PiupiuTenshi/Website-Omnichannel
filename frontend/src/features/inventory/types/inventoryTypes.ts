@@ -35,6 +35,8 @@ export interface InventoryBatch {
   manufacturedAtUtc: string | null;
   expiresAtUtc: string | null;
   status: InventoryBatchStatus;
+  sellingPrice: number;
+  compareAtPrice: number | null;
 }
 
 export interface ReceiveInventoryPayload {
@@ -56,4 +58,7 @@ export interface LowStockItem {
   unitCode: string;
   availableQuantity: number;
   suggestedPurchaseQuantity: number;
+  revenue: number;
+  supplierId: string | null;
+  supplierName: string | null;
 }

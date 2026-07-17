@@ -46,10 +46,10 @@ export function StoreSettingsPage() {
             <fieldset className="store-settings-form__hotlines">
               <legend>Hotlines</legend>
               {draft.contactNumbers.map((contactNumber, index) => (
-                <div className="store-settings-form__hotline-row" key={`${index}-${contactNumber}`}>
+                <div className="store-settings-form__hotline-row" key={index}>
                   <label className="store-settings-form__field" htmlFor={`store-hotline-${index}`}>
                     <span className="sr-only">Hotline {index + 1}</span>
-                    <input className="store-settings-form__input" id={`store-hotline-${index}`} type="tel" value={contactNumber} onChange={(event) => changeContactNumber(index, event.target.value)} />
+                    <input className="store-settings-form__input" id={`store-hotline-${index}`} type="tel" value={contactNumber} onChange={(event) => changeContactNumber(index, event.target.value.replace(/[^0-9+\-\s()]/g, ''))} />
                   </label>
                   <button className="store-settings-form__button store-settings-form__button--danger" type="button" onClick={() => removeContactNumber(index)} disabled={draft.contactNumbers.length === 1}>Remove</button>
                 </div>

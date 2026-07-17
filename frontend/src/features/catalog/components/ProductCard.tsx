@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { ProductListItem } from "../types/catalogTypes";
 import "./ProductCard.css";
 
@@ -8,6 +8,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const categoryClass = getCategoryClass(product.categoryName);
+  const navigate = useNavigate();
 
   return (
     <article className="product-card">
@@ -38,7 +39,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <span className="product-card__price">{formatCurrency(product.sellingPrice)}</span>
             <span className="product-card__unit">/ {product.unitName}</span>
           </div>
-          <button type="button" className="product-card__add-btn" aria-label="Thêm vào giỏ hàng">
+          <button type="button" className="product-card__add-btn" aria-label={`Chọn biến thể của ${product.name} để thêm vào giỏ`} onClick={() => navigate(`/products/${product.slug}`)}>
             <svg className="product-card__add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>

@@ -1,1 +1,589 @@
-.product-detail { display: grid; gap: var(--space-xl); padding-block: var(--space-xl); }.product-detail__image { display: grid; min-height: 18rem; place-items: center; overflow: hidden; border-radius: var(--radius-md); background: var(--color-surface-muted); }.product-detail__image img { width: 100%; height: 100%; object-fit: cover; }@media (min-width: 48rem) { .product-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.product-detail-page {
+  padding-block: var(--space-lg);
+  display: grid;
+  gap: var(--space-lg);
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-primary);
+}
+
+.breadcrumbs .separator {
+  color: var(--color-border);
+}
+
+.breadcrumbs .current-category {
+  font-weight: 500;
+}
+
+.breadcrumbs .current-item {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Product Detail Grid */
+.product-detail {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .product-detail {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+
+/* Left Column: Gallery & Badges */
+.product-detail__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.product-detail__image-container {
+  position: relative;
+  aspect-ratio: 4/3;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-detail__main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-bounce);
+}
+
+.product-detail__image-container:hover .product-detail__main-img {
+  transform: scale(1.03);
+}
+
+.product-detail__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-muted);
+}
+
+.product-detail__placeholder svg {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.product-detail__discount-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: var(--color-danger);
+  color: var(--color-surface);
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+  z-index: 10;
+}
+
+.product-detail__badges {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.badge-item {
+  background: var(--color-success-light);
+  color: var(--color-primary-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-pill);
+}
+
+.badge-item:nth-child(2) {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Right Column: Info & Options */
+.product-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  align-self: start;
+}
+
+.product-detail__cat-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary-strong);
+  background: var(--color-primary-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.product-detail__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+/* Pricing Group */
+.product-detail__price-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-detail__price {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--color-primary-strong);
+}
+
+.price-unit {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.product-detail__price-gram {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  width: 100%;
+}
+
+.product-detail__compare-price {
+  font-size: 1.15rem;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.product-detail__discount-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+/* Description Section */
+.product-detail__description h3,
+.product-detail__variants h3,
+.product-detail__portions h3,
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+  display: block;
+}
+
+.product-detail__description p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Variants Selection (Pills instead of selector dropdown) */
+.variant-pills {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.variant-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  min-width: 7rem;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.variant-pill:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-muted);
+}
+
+.variant-pill.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.variant-pill__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.variant-pill__price {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.variant-pill.active .variant-pill__price {
+  color: var(--color-primary-strong);
+}
+
+/* Quantity and Purchase Section */
+.product-detail__purchase-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.quantity-and-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  overflow: hidden;
+  max-width: fit-content;
+}
+
+.qty-btn {
+  background: transparent;
+  border: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.qty-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.quantity-selector input {
+  width: 3.5rem;
+  height: 2.25rem;
+  min-height: 2.25rem !important;
+  border: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  outline: none;
+}
+
+.quantity-selector input::-webkit-outer-spin-button,
+.quantity-selector input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Portion Selection Grid (weight-based products) */
+.product-detail__portions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.portion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-sm);
+}
+
+.portion-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.portion-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-muted);
+}
+
+.portion-card.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.portion-card__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.portion-card__grams {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.portion-card.active .portion-card__grams {
+  color: var(--color-primary-strong);
+}
+
+.portion-card__price {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-primary-strong);
+  margin-top: 2px;
+}
+
+.portion-note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* Subtotal Bar */
+.product-detail__subtotal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.subtotal-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.subtotal-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.subtotal-detail {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.subtotal-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary-strong);
+}
+
+/* Primary Action Button */
+.product-detail__add-button {
+  width: 100%;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.product-detail__add-button:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cart-add-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Success / Error Messages */
+.product-detail__message {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  margin-block: 0;
+}
+
+.product-detail__message:not(.product-detail__message--error) {
+  background: var(--color-success-light);
+  color: var(--color-primary-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cart-redirect-btn {
+  text-decoration: underline;
+  color: var(--color-primary-strong);
+  font-weight: 800;
+  margin-left: var(--space-xs);
+}
+
+.product-detail__message--error {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* Specifications block */
+.product-detail__specs {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-xl);
+  margin-top: var(--space-md);
+}
+
+.product-detail__specs h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: var(--space-md);
+}
+
+.specs-grid {
+  display: grid;
+  gap: var(--space-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.spec-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.spec-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.spec-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.spec-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Commitment banner */
+.product-detail__commitments {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 576px) {
+  .product-detail__commitments {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.commitment-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  transition: transform var(--transition-bounce), box-shadow var(--transition-smooth);
+}
+
+.commitment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.commitment-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
+  display: block;
+}
+
+.commitment-card h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.commitment-card p {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}

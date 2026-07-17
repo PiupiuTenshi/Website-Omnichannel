@@ -12,6 +12,10 @@ export interface OnlineOrder {
   distanceKm: number | null;
   managerMessage: string | null;
   createdAtUtc: string;
+  recipientName: string;
+  recipientPhoneNumber: string;
+  deliveryAddress: string;
+  paymentMethod: string;
 }
 
 function headers(accessToken?: string): HeadersInit {
@@ -64,5 +68,9 @@ export function markDeliveryFailed(orderId: string, accessToken: string): Promis
 
 export function markReturned(orderId: string, accessToken: string): Promise<OnlineOrder> {
   return requestJson<OnlineOrder>(`/online-orders/${orderId}/returned`, { method: "POST", headers: headers(accessToken) });
+}
+
+export function getOnlineOrdersForAdmin(accessToken: string): Promise<OnlineOrder[]> {
+  return requestJson<OnlineOrder[]>("/online-orders", { headers: headers(accessToken) });
 }
 

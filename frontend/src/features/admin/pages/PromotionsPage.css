@@ -1,0 +1,319 @@
+.promotions-page {
+  padding: var(--space-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.promotions-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-md);
+}
+
+.promotions-page__title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.promotions-page__subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+.promotions-page__role {
+  padding: 4px 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-strong);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Alert styles */
+.promotions-page__alert {
+  padding: var(--space-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--space-md);
+  font-weight: 500;
+}
+
+.promotions-page__alert--success {
+  background-color: var(--color-success-light);
+  color: var(--color-success-strong);
+  border: 1px solid var(--color-success);
+}
+
+.promotions-page__alert--danger {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-strong);
+  border: 1px solid var(--color-danger);
+}
+
+/* Controls and Filters */
+.promotions-page__controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.promotions-page__search-wrapper {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.promotions-page__search-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  font-size: 0.95rem;
+  transition: border-color var(--transition-fast);
+}
+
+.promotions-page__search-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.promotions-page__tabs {
+  display: flex;
+  gap: var(--space-xs);
+  background: var(--color-background-soft);
+  padding: 4px;
+  border-radius: var(--border-radius-md);
+}
+
+.promotions-page__tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.promotions-page__tab-btn--active {
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Promotions Table Grid */
+.promotions-page__table-card {
+  background: var(--color-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.promotions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.promotions-table th {
+  background: var(--color-background-soft);
+  padding: var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.promotions-table td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.promotions-table tr:hover {
+  background-color: var(--color-background-soft);
+}
+
+/* Badges and Price rendering */
+.product-name-bold {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.variant-sku-muted {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.price-current {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.price-compare {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  margin-top: 2px;
+}
+
+.discount-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-strong);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.normal-price-tag {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Edit Mode styling */
+.inline-edit-fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--color-background-soft);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-primary-light);
+}
+
+.inline-edit-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inline-edit-fields span {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.inline-edit-input {
+  width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+}
+
+.inline-edit-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.inline-edit-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: var(--space-xs);
+  align-self: flex-end;
+}
+
+.btn-inline-save {
+  padding: 6px 12px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.btn-inline-cancel {
+  padding: 6px 12px;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-inline-save:hover {
+  background: var(--color-primary-strong);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-xl);
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  gap: var(--space-sm);
+}
+
+.loading-spinner-circle {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-primary-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Custom Promotion Dates styling */
+.inline-edit-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.edit-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+  display: block;
+}
+
+.inline-edit-date-input {
+  width: 100%;
+  padding: 4px var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+}
+
+.inline-edit-date-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.promotion-dates-display {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.date-label {
+  font-weight: 500;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
