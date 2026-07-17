@@ -131,8 +131,14 @@ public sealed class CatalogRepository : ICatalogRepository
 
         if (!string.IsNullOrWhiteSpace(search.SearchTerm))
         {
-            var searchTerm = search.SearchTerm.Trim();
-            query = query.Where(product => product.Name.Contains(searchTerm) || product.Slug.Contains(searchTerm));
+            var searchPattern = CreateContainsLikePattern(search.SearchTerm);
+            query = query.Where(product =>
+                EF.Functions.Like(product.Name, searchPattern) ||
+                EF.Functions.Like(product.Slug, searchPattern) ||
+                product.Variants.Any(variant =>
+                    EF.Functions.Like(variant.Sku, searchPattern) ||
+                    (variant.Barcode != null && EF.Functions.Like(variant.Barcode, searchPattern)) ||
+                    (variant.Name != null && EF.Functions.Like(variant.Name, searchPattern))));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -211,5 +217,15 @@ public sealed class CatalogRepository : ICatalogRepository
             .Include(product => product.Images)
             .AsQueryable();
         return includeInactive ? query : query.Where(product => product.IsActive);
+    }
+
+    private static string CreateContainsLikePattern(string searchTerm)
+    {
+        var escapedSearchTerm = searchTerm.Trim()
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("[", "\\[", StringComparison.Ordinal);
+        return $"%{escapedSearchTerm}%";
     }
 }

@@ -16,16 +16,17 @@ public sealed class PosRepository(ApplicationDbContext context) : IPosRepository
             return Array.Empty<PosProductDto>();
         }
 
+        var searchPattern = CreateContainsLikePattern(trimmedQuery);
         var variants = await (
             from v in context.ProductVariants
             join p in context.Products on v.ProductId equals p.ProductId
             join u in context.UnitsOfMeasure on p.UnitOfMeasureId equals u.UnitOfMeasureId
             where p.IsActive
                 && v.IsActive
-                && (v.Barcode == trimmedQuery
-                    || v.Sku == trimmedQuery
-                    || p.Name.Contains(trimmedQuery)
-                    || (v.Name != null && v.Name.Contains(trimmedQuery)))
+                && (EF.Functions.Like(v.Sku, searchPattern)
+                    || (v.Barcode != null && EF.Functions.Like(v.Barcode, searchPattern))
+                    || EF.Functions.Like(p.Name, searchPattern)
+                    || (v.Name != null && EF.Functions.Like(v.Name, searchPattern)))
             select new
             {
                 v.ProductVariantId,
@@ -107,5 +108,15 @@ public sealed class PosRepository(ApplicationDbContext context) : IPosRepository
                 throw;
             }
         });
+    }
+
+    private static string CreateContainsLikePattern(string searchTerm)
+    {
+        var escapedSearchTerm = searchTerm
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("[", "\\[", StringComparison.Ordinal);
+        return $"%{escapedSearchTerm}%";
     }
 }
