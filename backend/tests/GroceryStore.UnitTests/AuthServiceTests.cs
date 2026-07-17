@@ -91,6 +91,26 @@ public sealed class AuthServiceTests
         {
             throw new NotSupportedException();
         }
+
+        public Task<IReadOnlyCollection<UserAccountSummary>> GetAllUsersAsync(CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IdentityOperationResult> CreateUserWithRoleAsync(string email, string password, string role, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IdentityOperationResult> ChangeUserRoleAsync(string userId, string newRole, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IdentityOperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class UnusedRefreshSessionStore : IRefreshSessionStore

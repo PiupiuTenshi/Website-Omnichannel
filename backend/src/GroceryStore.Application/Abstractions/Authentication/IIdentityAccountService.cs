@@ -25,4 +25,12 @@ public interface IIdentityAccountService
     Task<IdentityOperationResult> SetUserActiveAsync(string userId, bool isActive, CancellationToken cancellationToken);
 
     Task<int> CountActiveAdminsAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<UserAccountSummary>> GetAllUsersAsync(CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> CreateUserWithRoleAsync(string email, string password, string role, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> ChangeUserRoleAsync(string userId, string newRole, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken);
 }

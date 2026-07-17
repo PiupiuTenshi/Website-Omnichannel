@@ -202,6 +202,132 @@ public sealed class IdentityAccountService : IIdentityAccountService
             .CountAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<UserAccountSummary>> GetAllUsersAsync(CancellationToken cancellationToken)
+    {
+        var users = await applicationDbContext.Users
+            .AsNoTracking()
+            .OrderBy(u => u.Email)
+            .ToListAsync(cancellationToken);
+
+        var result = new List<UserAccountSummary>(users.Count);
+        foreach (var user in users)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            result.Add(new UserAccountSummary(
+                user.Id,
+                user.Email,
+                user.PhoneNumber,
+                user.EmailConfirmed,
+                user.PhoneNumberConfirmed,
+                user.IsActive,
+                roles.ToArray()));
+        }
+
+        return result;
+    }
+
+    public async Task<IdentityOperationResult> CreateUserWithRoleAsync(
+        string email,
+        string password,
+        string role,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<UserRole>(role, true, out var parsedRole))
+        {
+            return Failure($"'{role}' is not a valid role.");
+        }
+
+        var trimmedEmail = email.Trim();
+        var existing = await userManager.FindByEmailAsync(trimmedEmail);
+        if (existing is not null)
+        {
+            return Failure("An account with this email already exists.");
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = trimmedEmail,
+            Email = trimmedEmail,
+            EmailConfirmed = true,
+            IsActive = true
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            return ToOperationResult(createResult);
+        }
+
+        var roleResult = await userManager.AddToRoleAsync(user, parsedRole.ToString());
+        return ToOperationResult(roleResult);
+    }
+
+    public async Task<IdentityOperationResult> ChangeUserRoleAsync(
+        string userId,
+        string newRole,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<UserRole>(newRole, true, out var parsedRole))
+        {
+            return Failure($"'{newRole}' is not a valid role.");
+        }
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        var currentRoles = await userManager.GetRolesAsync(user);
+
+        // Protect against removing the last active admin
+        if (currentRoles.Contains(UserRole.Admin.ToString()) && parsedRole != UserRole.Admin)
+        {
+            if (user.IsActive)
+            {
+                var activeAdminCount = await CountActiveAdminsAsync(cancellationToken);
+                if (!LastActiveAdminPolicy.CanDeactivateOrDelete(activeAdminCount))
+                {
+                    return Failure("Cannot change the role of the last active administrator.");
+                }
+            }
+        }
+
+        if (currentRoles.Count > 0)
+        {
+            var removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                return ToOperationResult(removeResult);
+            }
+        }
+
+        var addResult = await userManager.AddToRoleAsync(user, parsedRole.ToString());
+        return ToOperationResult(addResult);
+    }
+
+    public async Task<IdentityOperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        if (await userManager.IsInRoleAsync(user, UserRole.Admin.ToString()) && user.IsActive)
+        {
+            var activeAdminCount = await CountActiveAdminsAsync(cancellationToken);
+            if (!LastActiveAdminPolicy.CanDeactivateOrDelete(activeAdminCount))
+            {
+                return Failure("The last active administrator cannot be deactivated.");
+            }
+        }
+
+        user.IsActive = false;
+        var updateResult = await userManager.UpdateAsync(user);
+        return ToOperationResult(updateResult);
+    }
+
     private Task<bool> ContactAlreadyExistsAsync(string? normalizedEmail, string? normalizedPhoneNumber, CancellationToken cancellationToken)
     {
         return applicationDbContext.Users.AnyAsync(

@@ -186,6 +186,41 @@ public sealed class AuthService
         }
     }
 
+    public Task<IReadOnlyCollection<UserAccountSummary>> GetAllUsersAsync(CancellationToken cancellationToken)
+    {
+        return identityAccountService.GetAllUsersAsync(cancellationToken);
+    }
+
+    public async Task CreateUserWithRoleAsync(string email, string password, string role, CancellationToken cancellationToken)
+    {
+        var result = await identityAccountService.CreateUserWithRoleAsync(email, password, role, cancellationToken);
+
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+    }
+
+    public async Task ChangeUserRoleAsync(string userId, string newRole, CancellationToken cancellationToken)
+    {
+        var result = await identityAccountService.ChangeUserRoleAsync(userId, newRole, cancellationToken);
+
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+    }
+
+    public async Task DeleteUserAsync(string userId, CancellationToken cancellationToken)
+    {
+        var result = await identityAccountService.DeleteUserAsync(userId, cancellationToken);
+
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+    }
+
     private async Task<AuthSessionResponse> CreateSessionAsync(IdentityAccount account, CancellationToken cancellationToken)
     {
         var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
