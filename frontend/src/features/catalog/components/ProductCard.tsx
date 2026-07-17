@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../cart";
+import { getProductBySlug } from "../api/catalogApi";
 import type { ProductListItem } from "../types/catalogTypes";
 import "./ProductCard.css";
 
@@ -18,7 +19,12 @@ export function ProductCard({ product }: ProductCardProps) {
     setIsAdding(true);
     setAddError("");
     try {
-      await addItem(product.productVariantId, product.isWeighed ? 0.1 : 1);
+      const productVariantId = product.productVariantId || await getProductBySlug(product.slug)
+        .then((detail) => detail.variants.find((variant) => variant.isActive)?.productVariantId);
+      if (!productVariantId) {
+        throw new Error("The product does not have an active variant.");
+      }
+      await addItem(productVariantId, product.isWeighed ? 0.1 : 1);
     } catch {
       setAddError("Không thể thêm sản phẩm vào giỏ hàng.");
     } finally {
