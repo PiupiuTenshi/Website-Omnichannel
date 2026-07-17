@@ -119,6 +119,46 @@ if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdenti
     }
 }
 
+// Auto link unlinked products to a default supplier for seeding
+try
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var context = scope.ServiceProvider.GetRequiredService<GroceryStore.Persistence.Context.ApplicationDbContext>();
+    var supplier = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Suppliers, s => s.IsActive);
+    if (supplier == null)
+    {
+        supplier = new GroceryStore.Domain.Entities.Supplier("Nhà cung cấp Tổng hợp", "Nguyễn Văn A", "0909090909", "ncc@demo.local", "204 Tô Hiến Thành, Đà Lạt", true);
+        await context.Suppliers.AddAsync(supplier);
+        await context.SaveChangesAsync();
+    }
+
+    var productIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+        System.Linq.Queryable.Select(context.Products, p => p.ProductId)
+    );
+
+    var linkedProductIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+        System.Linq.Queryable.Select(context.ProductSuppliers, ps => ps.ProductId)
+    );
+
+    var unlinkedProductIds = productIds.Except(linkedProductIds).ToList();
+
+    if (unlinkedProductIds.Count > 0)
+    {
+        foreach (var productId in unlinkedProductIds)
+        {
+            await context.ProductSuppliers.AddAsync(
+                new GroceryStore.Domain.Entities.ProductSupplier(productId, supplier.SupplierId, "PROD-" + productId.ToString().Substring(0, 8).ToUpper(), true)
+            );
+        }
+        await context.SaveChangesAsync();
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "An error occurred while seeding product suppliers.");
+}
+
 if (isDemoIdentitySeedCommand)
 {
     return;

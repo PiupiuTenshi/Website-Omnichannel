@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ReviewService>();
         services.AddScoped<ReturnService>();
         services.AddScoped<ReportingService>();
+        services.AddSingleton<Features.AuditLogs.AuditLogService>();
         return services;
     }
 }

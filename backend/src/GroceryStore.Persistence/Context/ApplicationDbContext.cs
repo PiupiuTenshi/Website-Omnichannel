@@ -195,6 +195,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(variant => variant.Barcode).HasMaxLength(64);
             entity.Property(variant => variant.SellingPrice).HasPrecision(18, 2).IsRequired();
             entity.Property(variant => variant.CompareAtPrice).HasPrecision(18, 2);
+            entity.Property(variant => variant.PromotionStartAtUtc);
+            entity.Property(variant => variant.PromotionEndAtUtc);
             entity.Property(variant => variant.RowVersion).IsRowVersion();
             entity.HasIndex(variant => variant.ProductId);
             entity.HasIndex(variant => variant.Sku).IsUnique();
