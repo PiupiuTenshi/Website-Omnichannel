@@ -184,6 +184,15 @@ public sealed class AuthService
         {
             throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
         }
+
+        if (!isActive)
+        {
+            var revokedSessionCount = await refreshSessionStore.RevokeActiveForUserAsync(userId, DateTime.UtcNow, cancellationToken);
+            if (revokedSessionCount > 0)
+            {
+                await refreshSessionStore.SaveChangesAsync(cancellationToken);
+            }
+        }
     }
 
     private async Task<AuthSessionResponse> CreateSessionAsync(IdentityAccount account, CancellationToken cancellationToken)
