@@ -75,6 +75,8 @@ export function startNewGuestCartSession(): void {
   } catch {
     // The in-memory fallback keeps the previous guest cart isolated for this tab.
   }
+
+  window.dispatchEvent(new Event("grocery-store-cart-session-changed"));
 }
 
 function createGuestSessionId(): string {

@@ -437,13 +437,15 @@ public sealed class CatalogService
         var primaryImage = product.Images.OrderByDescending(image => image.IsPrimary).ThenBy(image => image.SortOrder).FirstOrDefault();
         return new ProductListItemResponse(
             product.ProductId,
+            variant.ProductVariantId,
             product.Name,
             product.Slug,
             product.Category?.Name ?? string.Empty,
             product.UnitOfMeasure?.Name ?? string.Empty,
             variant.SellingPrice,
             variant.CompareAtPrice,
-            primaryImage is null ? null : GetImageUrl(primaryImage));
+            primaryImage is null ? null : GetImageUrl(primaryImage),
+            product.UnitOfMeasure?.AllowsDecimal ?? false);
     }
 
     private static ProductDetailResponse ToDetailResponse(Product product)

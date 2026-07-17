@@ -179,6 +179,18 @@
   transform: scale(1.1);
 }
 
+.product-card__add-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.product-card__add-error {
+  margin: 0;
+  color: var(--color-danger, #b91c1c);
+  font-size: 0.75rem;
+}
+
 .product-card__add-icon {
   width: 1.125rem;
   height: 1.125rem;

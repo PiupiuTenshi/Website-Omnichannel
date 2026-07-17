@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useCart } from "../../cart";
 import type { ProductListItem } from "../types/catalogTypes";
 import "./ProductCard.css";
 
@@ -8,6 +10,21 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const categoryClass = getCategoryClass(product.categoryName);
+  const { addItem } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  async function addToCart() {
+    setIsAdding(true);
+    setAddError("");
+    try {
+      await addItem(product.productVariantId, product.isWeighed ? 0.1 : 1);
+    } catch {
+      setAddError("Không thể thêm sản phẩm vào giỏ hàng.");
+    } finally {
+      setIsAdding(false);
+    }
+  }
 
   return (
     <article className="product-card">
@@ -38,12 +55,13 @@ export function ProductCard({ product }: ProductCardProps) {
             <span className="product-card__price">{formatCurrency(product.sellingPrice)}</span>
             <span className="product-card__unit">/ {product.unitName}</span>
           </div>
-          <button type="button" className="product-card__add-btn" aria-label="Thêm vào giỏ hàng">
+          <button type="button" className="product-card__add-btn" aria-label={`Thêm ${product.name} vào giỏ hàng`} onClick={() => void addToCart()} disabled={isAdding}>
             <svg className="product-card__add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
           </button>
         </div>
+        {addError ? <p className="product-card__add-error" role="alert">{addError}</p> : null}
       </div>
     </article>
   );

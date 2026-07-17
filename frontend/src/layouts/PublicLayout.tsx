@@ -1,8 +1,10 @@
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth";
+import { useCart } from "../features/cart";
 
 export function PublicLayout() {
   const { session, logout } = useAuth();
+  const { itemCount } = useCart();
 
   const getDashboardPath = () => {
     if (!session) return null;
@@ -21,6 +23,7 @@ export function PublicLayout() {
           <Link className="public-layout__brand" to="/">Tạp hóa chị Tỏ</Link>
           <nav className="public-layout__navigation" aria-label="Account navigation">
             <Link to="/">Sản phẩm</Link>
+            <Link to="/cart">Giỏ hàng ({itemCount})</Link>
             {dashboardPath && (
               <Link to={dashboardPath}>Trang quản trị</Link>
             )}
@@ -33,4 +36,3 @@ export function PublicLayout() {
     </div>
   );
 }
-

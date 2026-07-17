@@ -18,6 +18,7 @@ export interface UnitOfMeasure {
 
 export interface ProductListItem {
   productId: string;
+  productVariantId: string;
   name: string;
   slug: string;
   categoryName: string;
@@ -25,6 +26,7 @@ export interface ProductListItem {
   sellingPrice: number;
   compareAtPrice: number | null;
   primaryImageUrl: string | null;
+  isWeighed: boolean;
 }
 
 export interface ProductVariant {

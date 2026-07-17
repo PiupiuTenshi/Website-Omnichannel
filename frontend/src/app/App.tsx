@@ -1,10 +1,13 @@
 import { AppRouter } from "./router/AppRouter";
 import { AuthProvider } from "../features/auth";
+import { CartProvider } from "../features/cart";
 
 export function App() {
   return (
     <AuthProvider>
-      <AppRouter />
+      <CartProvider>
+        <AppRouter />
+      </CartProvider>
     </AuthProvider>
   );
 }
