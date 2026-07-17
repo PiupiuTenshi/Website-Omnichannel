@@ -14,6 +14,11 @@ public sealed class OnlineOrdersController(OnlineOrderService onlineOrderService
     public async Task<ActionResult<OnlineOrderResponse>> CheckoutAsync(CheckoutOnlineOrderRequest request, CancellationToken cancellationToken) =>
         Ok(await onlineOrderService.CheckoutAsync(new CheckoutOnlineOrderCommand(GetGuestSessionId(), User.FindFirstValue(ClaimTypes.NameIdentifier), request.RecipientName, request.RecipientPhoneNumber, request.DeliveryAddress, request.PaymentMethod), cancellationToken));
 
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<OnlineOrderResponse>>> GetOrdersAsync(CancellationToken cancellationToken) =>
+        Ok(await onlineOrderService.GetOrdersForManagementAsync(cancellationToken));
+
     [HttpGet("{onlineOrderId:guid}")]
     public async Task<ActionResult<OnlineOrderResponse>> GetAsync(Guid onlineOrderId, CancellationToken cancellationToken)
     {

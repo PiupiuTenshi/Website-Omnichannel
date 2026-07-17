@@ -11,20 +11,38 @@ namespace GroceryStore.Api.Controllers;
 public sealed class ShoppingCartController(ShoppingCartService shoppingCartService, InventoryReservationService inventoryReservationService) : ControllerBase
 {
     [HttpGet]
-    public Task<ActionResult<ShoppingCartResponse>> GetAsync(CancellationToken cancellationToken) =>
-        GetGuestCartResponseAsync(cancellationToken);
+    public async Task<ActionResult<ShoppingCartResponse>> GetAsync(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is not null)
+        {
+            return Ok(await shoppingCartService.GetUserCartAsync(userId, cancellationToken));
+        }
+
+        return await GetGuestCartResponseAsync(cancellationToken);
+    }
 
     [HttpPut("items")]
     public async Task<ActionResult<ShoppingCartResponse>> SetItemAsync(SetCartItemRequest request, CancellationToken cancellationToken)
     {
-        var response = await shoppingCartService.SetGuestItemAsync(GetGuestSessionId(), new SetCartItemCommand(request.ProductVariantId, request.Quantity), cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var response = await shoppingCartService.SetItemAsync(
+            userId is null ? GetGuestSessionId() : null,
+            userId,
+            new SetCartItemCommand(request.ProductVariantId, request.Quantity),
+            cancellationToken);
         return Ok(response);
     }
 
     [HttpDelete("items/{productVariantId:guid}")]
     public async Task<ActionResult<ShoppingCartResponse>> RemoveItemAsync(Guid productVariantId, CancellationToken cancellationToken)
     {
-        var response = await shoppingCartService.RemoveGuestItemAsync(GetGuestSessionId(), productVariantId, cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var response = await shoppingCartService.RemoveItemAsync(
+            userId is null ? GetGuestSessionId() : null,
+            userId,
+            productVariantId,
+            cancellationToken);
         return Ok(response);
     }
 

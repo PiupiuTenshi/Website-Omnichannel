@@ -9,6 +9,7 @@ public interface IOnlineOrderRepository
     Task CaptureAllocationsAsync(OnlineOrder order, string guestSessionId, CancellationToken cancellationToken);
     Task<OnlineOrder?> GetAccessibleAsync(Guid onlineOrderId, string guestSessionId, string? buyerUserId, CancellationToken cancellationToken);
     Task<OnlineOrder?> GetForManagementAsync(Guid onlineOrderId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<OnlineOrder>> GetOrdersForManagementAsync(CancellationToken cancellationToken);
     Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

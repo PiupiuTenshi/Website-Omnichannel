@@ -74,6 +74,12 @@ public sealed class ShoppingCart
         }
     }
 
+    public void Clear(DateTime utcNow)
+    {
+        items.Clear();
+        UpdatedAtUtc = utcNow;
+    }
+
     public void MergeFrom(ShoppingCart guestCart, DateTime utcNow)
     {
         foreach (var guestItem in guestCart.Items)
