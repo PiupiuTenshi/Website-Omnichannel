@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { StoreSettingsPage, AdminDashboardPage, ManagerDashboardPage, SellerDashboardPage, AuditLogsPage } from "../../features/admin";
+import { StoreSettingsPage, AdminDashboardPage, ManagerDashboardPage, SellerDashboardPage, AuditLogsPage, ReportsPage, UserManagementPage, AdminOrdersPage, PromotionsPage } from "../../features/admin";
 import { LoginPage, RegisterPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
-import { CatalogPage, ProductDetailPage, ProductFormPage } from "../../features/catalog";
+import { CatalogPage, ProductDetailPage, ProductFormPage, AdminProductsPage } from "../../features/catalog";
 import { CartPage } from "../../features/cart";
 import { CheckoutPage } from "../../features/checkout";
 import { OrderTrackingPage } from "../../features/orders";
@@ -35,7 +35,8 @@ const router = createBrowserRouter([
         element: <RoleRouteGuard allowedRoles={["Admin"]} />,
         children: [
           { path: "admin/dashboard", element: <AdminDashboardPage /> },
-          { path: "admin/audit-logs", element: <AuditLogsPage /> }
+          { path: "admin/audit-logs", element: <AuditLogsPage /> },
+          { path: "admin/users", element: <UserManagementPage /> }
         ]
       },
       {
@@ -53,18 +54,22 @@ const router = createBrowserRouter([
       {
         element: <RoleRouteGuard allowedRoles={["Admin", "Manager", "Seller"]} />,
         children: [
-          { path: "admin/pos", element: <PosPage /> }
+          { path: "manager/pos", element: <PosPage /> }
         ]
       },
       {
         element: <RoleRouteGuard allowedRoles={["Admin", "Manager"]} />,
         children: [
-          { path: "admin/store-settings", element: <StoreSettingsPage /> },
-          { path: "admin/products/new", element: <ProductFormPage /> },
-          { path: "admin/inventory/suppliers", element: <SuppliersPage /> },
-          { path: "admin/inventory/receive", element: <InventoryReceivePage /> },
-          { path: "admin/inventory/batches", element: <InventoryBatchesPage /> },
-          { path: "admin/inventory/low-stock", element: <LowStockPage /> }
+          { path: "manager/reports", element: <ReportsPage /> },
+          { path: "manager/store-settings", element: <StoreSettingsPage /> },
+          { path: "manager/products/new", element: <ProductFormPage /> },
+          { path: "manager/products", element: <AdminProductsPage /> },
+          { path: "manager/promotions", element: <PromotionsPage /> },
+          { path: "manager/orders", element: <AdminOrdersPage /> },
+          { path: "manager/inventory/suppliers", element: <SuppliersPage /> },
+          { path: "manager/inventory/receive", element: <InventoryReceivePage /> },
+          { path: "manager/inventory/batches", element: <InventoryBatchesPage /> },
+          { path: "manager/inventory/low-stock", element: <LowStockPage /> }
         ]
       }
     ]

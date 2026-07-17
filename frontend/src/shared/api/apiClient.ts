@@ -20,10 +20,15 @@ export async function requestJson<TResponse>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers
+    });
+  } catch {
+    throw new ApiError("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại.", 0);
+  }
   const payload = await readPayload(response);
 
   if (!response.ok) {
@@ -43,6 +48,9 @@ async function readPayload(response: Response): Promise<unknown> {
 }
 
 function readErrorMessage(payload: unknown): string {
+  if (typeof payload === "object" && payload !== null && "detail" in payload && typeof payload.detail === "string" && payload.detail.length > 0) {
+    return payload.detail;
+  }
   if (typeof payload === "object" && payload !== null && "message" in payload) {
     const message = payload.message;
     if (typeof message === "string" && message.length > 0) {
