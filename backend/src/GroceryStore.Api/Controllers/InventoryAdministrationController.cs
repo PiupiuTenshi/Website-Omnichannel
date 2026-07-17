@@ -28,6 +28,21 @@ public sealed class InventoryAdministrationController : ControllerBase
         return Created($"/api/admin/inventory/suppliers/{response.SupplierId}", response);
     }
 
+    [HttpPut("suppliers/{supplierId:guid}")]
+    public async Task<ActionResult<SupplierResponse>> UpdateSupplierAsync(Guid supplierId, UpdateSupplierRequest request, CancellationToken cancellationToken)
+    {
+        var response = await inventoryService.UpdateSupplierAsync(supplierId, new UpdateSupplierCommand(request.Name, request.ContactName, request.PhoneNumber, request.Email, request.Address, request.IsActive), cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpDelete("suppliers/{supplierId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteSupplierAsync(Guid supplierId, CancellationToken cancellationToken)
+    {
+        await inventoryService.DeleteSupplierAsync(supplierId, cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("product-suppliers")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> LinkProductSupplierAsync(LinkProductSupplierRequest request, CancellationToken cancellationToken)
@@ -46,14 +61,9 @@ public sealed class InventoryAdministrationController : ControllerBase
         CancellationToken cancellationToken = default) =>
         Ok(await inventoryService.GetLowStockItemsAsync(minimumAvailableQuantity, cancellationToken));
 
-    [HttpGet("purchase-list.csv")]
-    public async Task<IActionResult> ExportPurchaseListAsync(
-        [FromQuery] decimal minimumAvailableQuantity = 5m,
-        CancellationToken cancellationToken = default)
-    {
-        var items = await inventoryService.GetLowStockItemsAsync(minimumAvailableQuantity, cancellationToken);
-        return File(PurchaseListCsvExporter.Export(items), "text/csv; charset=utf-8", "purchase-list.csv");
-    }
+    [HttpGet("variants/{productVariantId:guid}/stats")]
+    public async Task<ActionResult<VariantStatsResponse>> GetVariantStatsAsync(Guid productVariantId, CancellationToken cancellationToken) =>
+        Ok(await inventoryService.GetVariantStatsAsync(productVariantId, cancellationToken));
 
     [HttpPost("receipts")]
     public async Task<ActionResult<InventoryBatchResponse>> ReceiveAsync(ReceiveInventoryRequest request, CancellationToken cancellationToken)

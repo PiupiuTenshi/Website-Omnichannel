@@ -1,5 +1,7 @@
 using GroceryStore.Application.Abstractions.Persistence;
+using GroceryStore.Application.Features.Inventory;
 using GroceryStore.Domain.Entities;
+using GroceryStore.Domain.Enums;
 using GroceryStore.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,13 +72,17 @@ public sealed class InventoryRepository : IInventoryRepository
                 variant.Name,
                 variant.Sku,
                 unit.Code,
-                supplier == null ? "" : supplier.Name);
+                supplier == null ? "" : supplier.Name,
+                variant.SellingPrice,
+                variant.CompareAtPrice);
 
-        return await resultQuery
+        var list = await resultQuery.ToListAsync(cancellationToken);
+
+        return list
             .OrderBy(batch => batch.ExpiresAtUtc == null)
             .ThenBy(batch => batch.ExpiresAtUtc)
             .ThenBy(batch => batch.ReceivedAtUtc)
-            .ToArrayAsync(cancellationToken);
+            .ToArray();
     }
 
     public async Task<IReadOnlyList<LowStockInventoryItem>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken)
@@ -86,7 +92,24 @@ public sealed class InventoryRepository : IInventoryRepository
             .GroupBy(batch => batch.ProductVariantId)
             .Select(group => new { ProductVariantId = group.Key, AvailableQuantity = group.Sum(batch => batch.AvailableQuantity) });
 
-        return await (
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+        var posSales = from item in applicationDbContext.OrderItems.AsNoTracking()
+                       join order in applicationDbContext.Orders.AsNoTracking() on item.OrderId equals order.OrderId
+                       where order.Status == OrderStatus.Completed && order.CreatedAtUtc >= thirtyDaysAgo
+                       group item by item.ProductVariantId into g
+                       select new { ProductVariantId = g.Key, Revenue = g.Sum(i => i.LineTotal) };
+
+        var onlineSales = from item in applicationDbContext.OnlineOrderItems.AsNoTracking()
+                          join order in applicationDbContext.OnlineOrders.AsNoTracking() on item.OnlineOrderId equals order.OnlineOrderId
+                          where order.Status == OnlineOrderStatus.Delivered && order.CreatedAtUtc >= thirtyDaysAgo
+                          group item by item.ProductVariantId into g
+                          select new { ProductVariantId = g.Key, Revenue = g.Sum(i => i.LineTotal) };
+
+        var posSalesDict = await posSales.ToDictionaryAsync(x => x.ProductVariantId, x => x.Revenue, cancellationToken);
+        var onlineSalesDict = await onlineSales.ToDictionaryAsync(x => x.ProductVariantId, x => x.Revenue, cancellationToken);
+
+        var items = await (
             from variant in applicationDbContext.ProductVariants.AsNoTracking()
             join product in applicationDbContext.Products.AsNoTracking() on variant.ProductId equals product.ProductId
             join unit in applicationDbContext.UnitsOfMeasure.AsNoTracking() on product.UnitOfMeasureId equals unit.UnitOfMeasureId
@@ -94,14 +117,124 @@ public sealed class InventoryRepository : IInventoryRepository
             from quantity in quantities.DefaultIfEmpty()
             where variant.IsActive && product.IsActive && (quantity == null || quantity.AvailableQuantity <= minimumAvailableQuantity)
             orderby product.Name, variant.Name
-            select new LowStockInventoryItem(
+            select new
+            {
                 variant.ProductVariantId,
-                product.Name,
-                variant.Name,
+                variant.ProductId,
+                ProductName = product.Name,
+                VariantName = variant.Name,
                 variant.Sku,
-                unit.Code,
-                quantity == null ? 0m : quantity.AvailableQuantity))
-            .ToArrayAsync(cancellationToken);
+                UnitCode = unit.Code,
+                AvailableQuantity = quantity == null ? 0m : quantity.AvailableQuantity
+            })
+            .ToListAsync(cancellationToken);
+
+        var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+        var variantIds = items.Select(i => i.ProductVariantId).Distinct().ToList();
+
+        var productSuppliers = await (
+            from ps in applicationDbContext.ProductSuppliers.AsNoTracking()
+            join s in applicationDbContext.Suppliers.AsNoTracking() on ps.SupplierId equals s.SupplierId
+            where productIds.Contains(ps.ProductId) && s.IsActive
+            select new { ps.ProductId, ps.SupplierId, s.Name, ps.IsPreferred, ps.CreatedAtUtc })
+            .ToListAsync(cancellationToken);
+
+        var productSuppliersDict = productSuppliers
+            .GroupBy(ps => ps.ProductId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(ps => ps.IsPreferred).ThenByDescending(ps => ps.CreatedAtUtc).First());
+
+        var newestBatches = await (
+            from b in applicationDbContext.InventoryBatches.AsNoTracking()
+            join s in applicationDbContext.Suppliers.AsNoTracking() on b.SupplierId equals s.SupplierId
+            where variantIds.Contains(b.ProductVariantId) && s.IsActive
+            select new { b.ProductVariantId, b.SupplierId, s.Name, b.ReceivedAtUtc })
+            .ToListAsync(cancellationToken);
+
+        var newestBatchesDict = newestBatches
+            .GroupBy(b => b.ProductVariantId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(b => b.ReceivedAtUtc).First());
+
+        return items.Select(item =>
+        {
+            posSalesDict.TryGetValue(item.ProductVariantId, out var posRev);
+            onlineSalesDict.TryGetValue(item.ProductVariantId, out var onlineRev);
+
+            Guid? resolvedSupplierId = null;
+            string? resolvedSupplierName = null;
+
+            if (productSuppliersDict.TryGetValue(item.ProductId, out var preferred))
+            {
+                resolvedSupplierId = preferred.SupplierId;
+                resolvedSupplierName = preferred.Name;
+            }
+            else if (newestBatchesDict.TryGetValue(item.ProductVariantId, out var lastBatch))
+            {
+                resolvedSupplierId = lastBatch.SupplierId;
+                resolvedSupplierName = lastBatch.Name;
+            }
+
+            return new LowStockInventoryItem(
+                item.ProductVariantId,
+                item.ProductName,
+                item.VariantName,
+                item.Sku,
+                item.UnitCode,
+                item.AvailableQuantity,
+                posRev + onlineRev,
+                resolvedSupplierId,
+                resolvedSupplierName);
+        }).ToArray();
+    }
+
+    private async Task<(Guid? SupplierId, string? SupplierName)> ResolveSupplierAsync(Guid productVariantId, CancellationToken cancellationToken)
+    {
+        var variant = await applicationDbContext.ProductVariants.AsNoTracking()
+            .FirstOrDefaultAsync(v => v.ProductVariantId == productVariantId, cancellationToken);
+        if (variant == null) return (null, null);
+
+        var preferredSupplier = await (
+            from ps in applicationDbContext.ProductSuppliers.AsNoTracking()
+            join s in applicationDbContext.Suppliers.AsNoTracking() on ps.SupplierId equals s.SupplierId
+            where ps.ProductId == variant.ProductId && s.IsActive
+            orderby ps.IsPreferred descending, ps.CreatedAtUtc descending
+            select new { s.SupplierId, s.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (preferredSupplier != null)
+        {
+            return (preferredSupplier.SupplierId, preferredSupplier.Name);
+        }
+
+        var lastBatch = await (
+            from b in applicationDbContext.InventoryBatches.AsNoTracking()
+            join s in applicationDbContext.Suppliers.AsNoTracking() on b.SupplierId equals s.SupplierId
+            where b.ProductVariantId == productVariantId && s.IsActive
+            orderby b.ReceivedAtUtc descending
+            select new { s.SupplierId, s.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastBatch != null)
+        {
+            return (lastBatch.SupplierId, lastBatch.Name);
+        }
+
+        // 3. Fallback to first active supplier in the database
+        var fallbackSupplier = await applicationDbContext.Suppliers.AsNoTracking()
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.Name)
+            .Select(s => new { s.SupplierId, s.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (fallbackSupplier != null)
+        {
+            return (fallbackSupplier.SupplierId, fallbackSupplier.Name);
+        }
+
+        return (null, null);
     }
 
     public Task AddSupplierAsync(Supplier supplier, CancellationToken cancellationToken) =>
@@ -116,5 +249,76 @@ public sealed class InventoryRepository : IInventoryRepository
     public Task AddTransactionAsync(InventoryTransaction transaction, CancellationToken cancellationToken) =>
         applicationDbContext.InventoryTransactions.AddAsync(transaction, cancellationToken).AsTask();
 
+    public async Task UpdatePreferredSupplierAsync(Guid productVariantId, Guid supplierId, CancellationToken cancellationToken)
+    {
+        var variant = await applicationDbContext.ProductVariants.AsNoTracking()
+            .FirstOrDefaultAsync(v => v.ProductVariantId == productVariantId, cancellationToken);
+        if (variant == null) return;
+
+        // Load all existing links for this product parent
+        var existingLinks = await applicationDbContext.ProductSuppliers
+            .Where(ps => ps.ProductId == variant.ProductId)
+            .ToListAsync(cancellationToken);
+
+        // Turn off preferred on all other suppliers links for this product parent
+        foreach (var link in existingLinks)
+        {
+            if (link.SupplierId != supplierId && link.IsPreferred)
+            {
+                link.SetPreferred(false);
+                applicationDbContext.ProductSuppliers.Update(link);
+            }
+        }
+
+        // Find or create the link for the newly received supplier
+        var targetLink = existingLinks.FirstOrDefault(ps => ps.SupplierId == supplierId);
+        if (targetLink != null)
+        {
+            if (!targetLink.IsPreferred)
+            {
+                targetLink.SetPreferred(true);
+                applicationDbContext.ProductSuppliers.Update(targetLink);
+            }
+        }
+        else
+        {
+            var newLink = new ProductSupplier(
+                variant.ProductId, 
+                supplierId, 
+                "PROD-" + variant.ProductId.ToString().Substring(0, 8).ToUpper(), 
+                true
+            );
+            await applicationDbContext.ProductSuppliers.AddAsync(newLink, cancellationToken);
+        }
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => applicationDbContext.SaveChangesAsync(cancellationToken);
+
+    public async Task<VariantStatsResponse> GetVariantStatsAsync(Guid productVariantId, CancellationToken cancellationToken)
+    {
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+        var posSales = await (
+            from item in applicationDbContext.OrderItems.AsNoTracking()
+            join order in applicationDbContext.Orders.AsNoTracking() on item.OrderId equals order.OrderId
+            where order.Status == OrderStatus.Completed && order.CreatedAtUtc >= thirtyDaysAgo && item.ProductVariantId == productVariantId
+            select item.LineTotal)
+            .SumAsync(cancellationToken);
+
+        var onlineSales = await (
+            from item in applicationDbContext.OnlineOrderItems.AsNoTracking()
+            join order in applicationDbContext.OnlineOrders.AsNoTracking() on item.OnlineOrderId equals order.OnlineOrderId
+            where order.Status == OnlineOrderStatus.Delivered && order.CreatedAtUtc >= thirtyDaysAgo && item.ProductVariantId == productVariantId
+            select item.LineTotal)
+            .SumAsync(cancellationToken);
+
+        var availableQty = await applicationDbContext.InventoryBatches
+            .AsNoTracking()
+            .Where(b => b.ProductVariantId == productVariantId && b.Status == InventoryBatchStatus.Available)
+            .SumAsync(b => b.AvailableQuantity, cancellationToken);
+
+        var (supplierId, supplierName) = await ResolveSupplierAsync(productVariantId, cancellationToken);
+
+        return new VariantStatsResponse(productVariantId, availableQty, posSales + onlineSales, supplierId, supplierName);
+    }
 }

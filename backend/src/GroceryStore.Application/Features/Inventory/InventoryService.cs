@@ -60,6 +60,12 @@ public sealed class InventoryService
         var receipt = new InventoryTransaction(batch.InventoryBatchId, batch.ProductVariantId, InventoryTransactionType.Receipt, command.Quantity, Optional(command.Reference) ?? "Inventory receipt", command.ReceivedAtUtc);
         await inventoryRepository.AddBatchAsync(batch, cancellationToken);
         await inventoryRepository.AddTransactionAsync(receipt, cancellationToken);
+
+        if (command.SupplierId.HasValue)
+        {
+            await inventoryRepository.UpdatePreferredSupplierAsync(command.ProductVariantId, command.SupplierId.Value, cancellationToken);
+        }
+
         await inventoryRepository.SaveChangesAsync(cancellationToken);
         return ToResponse(batch);
     }
@@ -98,7 +104,9 @@ public sealed class InventoryService
             batch.VariantName,
             batch.Sku,
             batch.UnitCode,
-            batch.SupplierName)).ToArray();
+            batch.SupplierName,
+            batch.SellingPrice,
+            batch.CompareAtPrice)).ToArray();
     }
 
     public async Task<IReadOnlyList<LowStockItemResponse>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken)
@@ -116,7 +124,46 @@ public sealed class InventoryService
             item.Sku,
             item.UnitCode,
             item.AvailableQuantity,
-            minimumAvailableQuantity - item.AvailableQuantity)).ToArray();
+            minimumAvailableQuantity - item.AvailableQuantity,
+            item.Revenue,
+            item.SupplierId,
+            item.SupplierName)).ToArray();
+    }
+
+    public Task<VariantStatsResponse> GetVariantStatsAsync(Guid productVariantId, CancellationToken cancellationToken) =>
+        inventoryRepository.GetVariantStatsAsync(productVariantId, cancellationToken);
+
+    public async Task<SupplierResponse> UpdateSupplierAsync(Guid supplierId, UpdateSupplierCommand command, CancellationToken cancellationToken)
+    {
+        var supplier = await inventoryRepository.GetSupplierAsync(supplierId, cancellationToken)
+            ?? throw new KeyNotFoundException("Supplier was not found.");
+
+        supplier.Update(
+            Required(command.Name, "Supplier name"),
+            Optional(command.ContactName),
+            Optional(command.PhoneNumber),
+            Optional(command.Email),
+            Optional(command.Address),
+            command.IsActive);
+
+        await inventoryRepository.SaveChangesAsync(cancellationToken);
+        return ToResponse(supplier);
+    }
+
+    public async Task DeleteSupplierAsync(Guid supplierId, CancellationToken cancellationToken)
+    {
+        var supplier = await inventoryRepository.GetSupplierAsync(supplierId, cancellationToken)
+            ?? throw new KeyNotFoundException("Supplier was not found.");
+
+        supplier.Update(
+            supplier.Name,
+            supplier.ContactName,
+            supplier.PhoneNumber,
+            supplier.Email,
+            supplier.Address,
+            false);
+
+        await inventoryRepository.SaveChangesAsync(cancellationToken);
     }
 
     private static SupplierResponse ToResponse(Supplier supplier) => new(supplier.SupplierId, supplier.Name, supplier.ContactName, supplier.PhoneNumber, supplier.Email, supplier.Address, supplier.IsActive);

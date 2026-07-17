@@ -279,7 +279,9 @@ public sealed class CatalogService
             NormalizeBarcode(command.Barcode),
             command.SellingPrice,
             command.CompareAtPrice,
-            command.IsActive);
+            command.IsActive,
+            command.PromotionStartAtUtc,
+            command.PromotionEndAtUtc);
         await catalogRepository.SaveChangesAsync(cancellationToken);
         return ToResponse(variant);
     }
@@ -426,7 +428,9 @@ public sealed class CatalogService
             variant.SellingPrice,
             variant.CompareAtPrice,
             variant.IsActive,
-            Convert.ToBase64String(variant.RowVersion));
+            Convert.ToBase64String(variant.RowVersion),
+            variant.PromotionStartAtUtc,
+            variant.PromotionEndAtUtc);
     }
 
     private static ProductListItemResponse ToListItemResponse(Product product)
