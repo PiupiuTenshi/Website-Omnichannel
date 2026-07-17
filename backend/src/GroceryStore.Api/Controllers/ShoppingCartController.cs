@@ -11,20 +11,20 @@ namespace GroceryStore.Api.Controllers;
 public sealed class ShoppingCartController(ShoppingCartService shoppingCartService, InventoryReservationService inventoryReservationService) : ControllerBase
 {
     [HttpGet]
-    public Task<ActionResult<ShoppingCartResponse>> GetAsync(CancellationToken cancellationToken) =>
-        GetGuestCartResponseAsync(cancellationToken);
+    public async Task<ActionResult<ShoppingCartResponse>> GetAsync(CancellationToken cancellationToken) =>
+        Ok(await GetCartAsync(cancellationToken));
 
     [HttpPut("items")]
     public async Task<ActionResult<ShoppingCartResponse>> SetItemAsync(SetCartItemRequest request, CancellationToken cancellationToken)
     {
-        var response = await shoppingCartService.SetGuestItemAsync(GetGuestSessionId(), new SetCartItemCommand(request.ProductVariantId, request.Quantity), cancellationToken);
+        var response = await SetCartItemAsync(new SetCartItemCommand(request.ProductVariantId, request.Quantity), cancellationToken);
         return Ok(response);
     }
 
     [HttpDelete("items/{productVariantId:guid}")]
     public async Task<ActionResult<ShoppingCartResponse>> RemoveItemAsync(Guid productVariantId, CancellationToken cancellationToken)
     {
-        var response = await shoppingCartService.RemoveGuestItemAsync(GetGuestSessionId(), productVariantId, cancellationToken);
+        var response = await RemoveCartItemAsync(productVariantId, cancellationToken);
         return Ok(response);
     }
 
@@ -45,14 +45,33 @@ public sealed class ShoppingCartController(ShoppingCartService shoppingCartServi
         return Ok(response);
     }
 
-    private async Task<ActionResult<ShoppingCartResponse>> GetGuestCartResponseAsync(CancellationToken cancellationToken) =>
-        Ok(await shoppingCartService.GetGuestCartAsync(GetGuestSessionId(), cancellationToken));
+    private Task<ShoppingCartResponse> GetCartAsync(CancellationToken cancellationToken) =>
+        GetUserId() is { } userId
+            ? shoppingCartService.GetUserCartAsync(userId, cancellationToken)
+            : shoppingCartService.GetGuestCartAsync(GetGuestSessionId(), cancellationToken);
+
+    private Task<ShoppingCartResponse> SetCartItemAsync(SetCartItemCommand command, CancellationToken cancellationToken) =>
+        GetUserId() is { } userId
+            ? shoppingCartService.SetUserItemAsync(userId, command, cancellationToken)
+            : shoppingCartService.SetGuestItemAsync(GetGuestSessionId(), command, cancellationToken);
+
+    private Task<ShoppingCartResponse> RemoveCartItemAsync(Guid productVariantId, CancellationToken cancellationToken) =>
+        GetUserId() is { } userId
+            ? shoppingCartService.RemoveUserItemAsync(userId, productVariantId, cancellationToken)
+            : shoppingCartService.RemoveGuestItemAsync(GetGuestSessionId(), productVariantId, cancellationToken);
+
+    private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     private string GetGuestSessionId()
     {
+        if (Request.Headers.TryGetValue("X-Guest-Cart-Token", out var guestCartToken))
+        {
+            return guestCartToken.ToString();
+        }
+
         if (!Request.Headers.TryGetValue("X-Cart-Session", out var sessionId))
         {
-            throw new InvalidOperationException("X-Cart-Session header is required.");
+            throw new InvalidOperationException("X-Guest-Cart-Token header is required.");
         }
 
         return sessionId.ToString();
