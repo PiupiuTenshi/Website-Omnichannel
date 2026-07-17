@@ -8,5 +8,6 @@ public enum InventoryTransactionType
     Allocation,
     ExpiryWriteOff,
     ReservationHold,
-    ReservationRelease
+    ReservationRelease,
+    OnlineOrderCancellationRelease
 }
