@@ -102,7 +102,10 @@ function isValidSessionId(id: string | null): boolean {
 
 function cartHeaders(): HeadersInit {
   const sessionId = getCartSessionId();
-  const headers: Record<string, string> = { "X-Cart-Session": sessionId };
+  const headers: Record<string, string> = {
+    "X-Guest-Cart-Token": sessionId,
+    "X-Cart-Session": sessionId
+  };
   const token = getActiveAccessToken();
   if (token !== null) {
     headers["Authorization"] = `Bearer ${token}`;
