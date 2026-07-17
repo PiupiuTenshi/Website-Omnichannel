@@ -25,6 +25,23 @@ public sealed class AuthServiceTests
         Assert.Contains("not been verified", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task SetUserActiveAsync_RevokesAllRefreshSessionsWhenAccountIsLocked()
+    {
+        var refreshSessionStore = new TrackingRefreshSessionStore();
+        var service = new AuthService(
+            new UnverifiedAccountService(),
+            refreshSessionStore,
+            new UnusedTokenService(),
+            new UnusedEmailSender(),
+            new UnusedSmsOtpSender());
+
+        await service.SetUserActiveAsync("user-id", false, CancellationToken.None);
+
+        Assert.Equal("user-id", refreshSessionStore.RevokedUserId);
+        Assert.True(refreshSessionStore.SaveChangesCalled);
+    }
+
     private sealed class UnverifiedAccountService : IIdentityAccountService
     {
         private static readonly IdentityAccount ACCOUNT = new(
@@ -84,7 +101,7 @@ public sealed class AuthServiceTests
 
         public Task<IdentityOperationResult> SetUserActiveAsync(string userId, bool isActive, CancellationToken cancellationToken)
         {
-            throw new NotSupportedException();
+            return Task.FromResult(IdentityOperationResult.SUCCESS);
         }
 
         public Task<int> CountActiveAdminsAsync(CancellationToken cancellationToken)
@@ -99,7 +116,32 @@ public sealed class AuthServiceTests
 
         public Task<RefreshSession?> FindByTokenHashAsync(string tokenHash, CancellationToken cancellationToken) => throw new NotSupportedException();
 
+        public Task<int> RevokeActiveForUserAsync(string userId, DateTime revokedAtUtc, CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task SaveChangesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class TrackingRefreshSessionStore : IRefreshSessionStore
+    {
+        public string? RevokedUserId { get; private set; }
+
+        public bool SaveChangesCalled { get; private set; }
+
+        public Task AddAsync(RefreshSession refreshSession, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<RefreshSession?> FindByTokenHashAsync(string tokenHash, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<int> RevokeActiveForUserAsync(string userId, DateTime revokedAtUtc, CancellationToken cancellationToken)
+        {
+            RevokedUserId = userId;
+            return Task.FromResult(1);
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+        {
+            SaveChangesCalled = true;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class UnusedTokenService : ITokenService

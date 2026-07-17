@@ -8,5 +8,7 @@ public interface IRefreshSessionStore
 
     Task<RefreshSession?> FindByTokenHashAsync(string tokenHash, CancellationToken cancellationToken);
 
+    Task<int> RevokeActiveForUserAsync(string userId, DateTime revokedAtUtc, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
