@@ -1,4 +1,5 @@
 import { requestJson } from "../../../shared/api/apiClient";
+import { getActiveAccessToken } from "../../auth/hooks/authSession";
 import { getCartSessionId } from "../../cart/api/cartApi";
 
 export interface OnlineOrder {
@@ -16,8 +17,9 @@ export interface OnlineOrder {
 
 function headers(accessToken?: string): HeadersInit {
   const h: Record<string, string> = { "X-Cart-Session": getCartSessionId() };
-  if (accessToken) {
-    h["Authorization"] = `Bearer ${accessToken}`;
+  const token = accessToken ?? getActiveAccessToken();
+  if (token !== null) {
+    h["Authorization"] = `Bearer ${token}`;
   }
   return h;
 }
@@ -65,4 +67,3 @@ export function markDeliveryFailed(orderId: string, accessToken: string): Promis
 export function markReturned(orderId: string, accessToken: string): Promise<OnlineOrder> {
   return requestJson<OnlineOrder>(`/online-orders/${orderId}/returned`, { method: "POST", headers: headers(accessToken) });
 }
-

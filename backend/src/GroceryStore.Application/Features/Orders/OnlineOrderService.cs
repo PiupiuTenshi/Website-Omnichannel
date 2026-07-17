@@ -86,8 +86,13 @@ public sealed class OnlineOrderService(
     {
         var order = await onlineOrderRepository.GetAccessibleAsync(onlineOrderId, guestSessionId, buyerUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Online order was not found.");
-        order.Cancel(DateTime.UtcNow);
-        await onlineOrderRepository.SaveChangesAsync(cancellationToken);
+        var utcNow = DateTime.UtcNow;
+        await onlineOrderRepository.ExecuteInTransactionAsync(async () =>
+        {
+            order.Cancel(utcNow);
+            await onlineOrderRepository.ReleaseAllocationsAsync(order, utcNow, cancellationToken);
+            await onlineOrderRepository.SaveChangesAsync(cancellationToken);
+        }, cancellationToken);
         return ToResponse(order);
     }
 

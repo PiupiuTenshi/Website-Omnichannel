@@ -1,4 +1,5 @@
 import { requestJson } from "../../../shared/api/apiClient";
+import { getActiveAccessToken } from "../../auth/hooks/authSession";
 import type { Cart, CartReservation } from "../types/cartTypes";
 
 const CART_SESSION_KEY = "grocery-store-cart-session";
@@ -97,21 +98,10 @@ function isValidSessionId(id: string | null): boolean {
   );
 }
 
-function getAccessToken(): string | null {
-  try {
-    const serializedSession = sessionStorage.getItem("grocery-store.auth-session");
-    if (serializedSession === null) return null;
-    const session = JSON.parse(serializedSession);
-    return new Date(session.accessTokenExpiresAtUtc) > new Date() ? session.accessToken : null;
-  } catch {
-    return null;
-  }
-}
-
 function cartHeaders(): HeadersInit {
   const sessionId = getCartSessionId();
   const headers: Record<string, string> = { "X-Cart-Session": sessionId };
-  const token = getAccessToken();
+  const token = getActiveAccessToken();
   if (token !== null) {
     headers["Authorization"] = `Bearer ${token}`;
   }

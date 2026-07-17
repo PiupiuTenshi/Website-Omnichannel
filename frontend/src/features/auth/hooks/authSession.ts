@@ -24,6 +24,10 @@ export function loadAuthSession(): AuthSession | null {
   }
 }
 
+export function getActiveAccessToken(): string | null {
+  return loadAuthSession()?.accessToken ?? null;
+}
+
 export function saveAuthSession(session: AuthSession | null): void {
   if (session === null) {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
