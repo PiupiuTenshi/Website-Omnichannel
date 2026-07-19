@@ -8,7 +8,6 @@ import "./AuthPage.css";
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [regMethod, setRegMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -19,13 +18,8 @@ export function RegisterPage() {
     event.preventDefault();
     setErrorMessage("");
 
-    if (regMethod === "email" && !email.trim()) {
-      setErrorMessage("Vui lòng nhập địa chỉ email của bạn.");
-      return;
-    }
-
-    if (regMethod === "phone" && !phoneNumber.trim()) {
-      setErrorMessage("Vui lòng nhập số điện thoại của bạn.");
+    if (!email.trim() && !phoneNumber.trim()) {
+      setErrorMessage("Nhập ít nhất email hoặc số điện thoại để đăng nhập và nhận mã xác minh.");
       return;
     }
 
@@ -37,8 +31,8 @@ export function RegisterPage() {
     setIsSubmitting(true);
     try {
       const response = await register({
-        email: regMethod === "email" ? email : "",
-        phoneNumber: regMethod === "phone" ? phoneNumber : "",
+        email,
+        phoneNumber,
         password
       });
       navigate(`/verify?userId=${encodeURIComponent(response.userId)}`, { replace: true });
@@ -54,66 +48,18 @@ export function RegisterPage() {
       <div className="auth-card">
         <header className="auth-card__header">
           <h1 className="auth-card__title" id="register-heading">Đăng ký tài khoản</h1>
-          <p className="auth-card__description">Chọn phương thức đăng ký bên dưới.</p>
+          <p className="auth-card__description">Nhập ít nhất email hoặc số điện thoại. Số điện thoại có thể dùng để đăng nhập khi không có email.</p>
         </header>
 
-        <div className="auth-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={regMethod === "email"}
-            className={`auth-tabs__tab ${regMethod === "email" ? "auth-tabs__tab--active" : ""}`}
-            onClick={() => {
-              setRegMethod("email");
-              setPhoneNumber("");
-              setErrorMessage("");
-            }}
-          >
-            Email
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={regMethod === "phone"}
-            className={`auth-tabs__tab ${regMethod === "phone" ? "auth-tabs__tab--active" : ""}`}
-            onClick={() => {
-              setRegMethod("phone");
-              setEmail("");
-              setErrorMessage("");
-            }}
-          >
-            Số điện thoại
-          </button>
-        </div>
-
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          {regMethod === "email" ? (
-            <label className="auth-form__field" htmlFor="register-email">
-              <span>Địa chỉ Email</span>
-              <input
-                className="auth-form__input"
-                id="register-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                required
-              />
-            </label>
-          ) : (
-            <label className="auth-form__field" htmlFor="register-phone">
-              <span>Số điện thoại</span>
-              <input
-                className="auth-form__input"
-                id="register-phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                autoComplete="tel"
-                required
-              />
-            </label>
-          )}
+          <label className="auth-form__field" htmlFor="register-email">
+            <span>Địa chỉ email (tùy chọn)</span>
+            <input className="auth-form__input" id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+          </label>
+          <label className="auth-form__field" htmlFor="register-phone">
+            <span>Số điện thoại (tùy chọn, dùng để đăng nhập nếu không có email)</span>
+            <input className="auth-form__input" id="register-phone" type="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} autoComplete="tel" />
+          </label>
           <label className="auth-form__field" htmlFor="register-password">
             <span>Mật khẩu</span>
             <input
