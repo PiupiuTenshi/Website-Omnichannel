@@ -25,6 +25,8 @@ export interface ProductListItem {
   sellingPrice: number;
   compareAtPrice: number | null;
   primaryImageUrl: string | null;
+  promotionStartAtUtc?: string | null;
+  promotionEndAtUtc?: string | null;
 }
 
 export interface ProductVariant {
@@ -36,6 +38,8 @@ export interface ProductVariant {
   compareAtPrice: number | null;
   isActive: boolean;
   rowVersion: string;
+  promotionStartAtUtc?: string | null;
+  promotionEndAtUtc?: string | null;
 }
 
 export interface ProductDetail extends ProductListItem {

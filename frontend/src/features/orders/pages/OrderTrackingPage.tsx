@@ -7,6 +7,7 @@ import {
   getOnlineOrder,
   setShippingQuote,
   confirmCodPayment,
+  markPreparing,
   markDelivering,
   markDelivered,
   markDeliveryFailed,
@@ -52,6 +53,13 @@ export function OrderTrackingPage() {
     void loadOrder();
   }, [loadOrder]);
 
+  useEffect(() => {
+    const refreshId = window.setInterval(() => {
+      void loadOrder();
+    }, 30_000);
+    return () => window.clearInterval(refreshId);
+  }, [loadOrder]);
+
   // Handle countdown reservation timer
   useEffect(() => {
     if (!order) return;
@@ -90,8 +98,8 @@ export function OrderTrackingPage() {
         setShippingFeeInput(updatedOrder.shippingFee.toString());
       }
       setManagerMessageInput(updatedOrder.managerMessage || "");
-    } catch {
-      setError("Không thể cập nhật đơn hàng. Vui lòng kiểm tra và thử lại.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Không thể cập nhật đơn hàng. Vui lòng kiểm tra và thử lại.");
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +286,7 @@ export function OrderTrackingPage() {
                 <button
                   type="button"
                   className="order-tracking__btn order-tracking__btn--primary"
-                  onClick={() => void handleAction(() => acceptQuote(orderId))}
+                    onClick={() => void handleAction(() => acceptQuote(orderId, accessToken))}
                   disabled={isSubmitting}
                 >
                   Đồng ý & Tiếp tục
@@ -358,8 +366,17 @@ export function OrderTrackingPage() {
               <div className="order-tracking__manager-actions">
                 <h3>Chuyển trạng thái giao vận</h3>
                 <div className="order-tracking__actions-grid">
-                  {/* Preparing -> Delivering */}
-                  {["Pending", "QuoteAccepted", "Confirmed", "Preparing"].includes(order.status) && (
+                  {["Pending", "QuoteAccepted", "Confirmed"].includes(order.status) && (
+                    <button
+                      type="button"
+                      className="order-tracking__btn order-tracking__btn--primary"
+                      onClick={() => void handleAction(() => markPreparing(orderId, accessToken))}
+                      disabled={isSubmitting}
+                    >
+                      Bắt đầu xử lý đơn
+                    </button>
+                  )}
+                  {order.status === "Preparing" && (
                     <button
                       type="button"
                       className="order-tracking__btn order-tracking__btn--primary"
@@ -404,8 +421,8 @@ export function OrderTrackingPage() {
                     </button>
                   )}
 
-                  {/* Delivered -> Returned */}
-                  {order.status === "Delivered" && (
+                  {/* Delivery failed -> Returned */}
+                  {order.status === "DeliveryFailed" && (
                     <button
                       type="button"
                       className="order-tracking__btn order-tracking__btn--danger"

@@ -14,7 +14,7 @@ export function getCartSessionId(): string {
     if (isValidSessionId(localId)) {
       return localId!;
     }
-  } catch (e) {
+  } catch {
     // Ignore
   }
 
@@ -24,7 +24,7 @@ export function getCartSessionId(): string {
     if (isValidSessionId(sessionId)) {
       return sessionId!;
     }
-  } catch (e) {
+  } catch {
     // Ignore
   }
   
@@ -37,7 +37,7 @@ export function getCartSessionId(): string {
     if (window.localStorage.getItem(CART_SESSION_KEY) === sessionId) {
       writeSuccessful = true;
     }
-  } catch (e) {
+  } catch {
     // Ignore
   }
 
@@ -46,7 +46,7 @@ export function getCartSessionId(): string {
     if (window.sessionStorage.getItem(CART_SESSION_KEY) === sessionId) {
       writeSuccessful = true;
     }
-  } catch (e) {
+  } catch {
     // Ignore
   }
 
@@ -74,6 +74,8 @@ export function startNewGuestCartSession(): void {
   } catch {
     // The in-memory fallback keeps the previous guest cart isolated for this tab.
   }
+
+  window.dispatchEvent(new Event("grocery-store-cart-session-changed"));
 }
 
 function createGuestSessionId(): string {
@@ -110,7 +112,10 @@ function getAccessToken(): string | null {
 
 function cartHeaders(): HeadersInit {
   const sessionId = getCartSessionId();
-  const headers: Record<string, string> = { "X-Cart-Session": sessionId };
+  const headers: Record<string, string> = {
+    "X-Cart-Session": sessionId,
+    "X-Guest-Cart-Token": sessionId
+  };
   const token = getAccessToken();
   if (token !== null) {
     headers["Authorization"] = `Bearer ${token}`;

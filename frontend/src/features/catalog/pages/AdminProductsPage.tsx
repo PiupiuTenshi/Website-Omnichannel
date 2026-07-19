@@ -15,6 +15,10 @@ import {
 import type { Category, UnitOfMeasure, ProductListItem, ProductDetail, ProductVariant } from "../types/catalogTypes";
 import "./AdminProductsPage.css";
 
+function getRequestErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function AdminProductsPage() {
   const { session } = useAuth();
   const accessToken = session?.accessToken ?? "";
@@ -179,8 +183,8 @@ export function AdminProductsPage() {
       setNewPrice("");
       setNewComparePrice("");
       void loadProducts();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể lưu sản phẩm. Vui lòng kiểm tra SKU/Barcode trùng lặp.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể lưu sản phẩm. Vui lòng kiểm tra SKU/Barcode trùng lặp."));
     }
   };
 
@@ -222,8 +226,8 @@ export function AdminProductsPage() {
       setMessage(`Đã cập nhật thông tin sản phẩm "${editName}" thành công.`);
       setEditingProduct(null);
       void loadProducts();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể cập nhật sản phẩm.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể cập nhật sản phẩm."));
     }
   };
 
@@ -240,8 +244,8 @@ export function AdminProductsPage() {
       await deleteProduct(accessToken, productId);
       setMessage(`Đã xóa sản phẩm "${name}" thành công.`);
       void loadProducts();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể xóa sản phẩm. Có thể có dữ liệu liên kết như lô hàng nhập hoặc hóa đơn.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể xóa sản phẩm. Có thể có dữ liệu liên kết như lô hàng nhập hoặc hóa đơn."));
     }
   };
 
@@ -264,7 +268,9 @@ export function AdminProductsPage() {
     try {
       const details = await getProductForAdminById(accessToken, managingVariantsProduct.productId);
       setManagingVariantsProduct(details);
-    } catch {}
+    } catch {
+      setErrorMessage("Không thể tải lại danh sách biến thể.");
+    }
   };
 
   // Add Product Variant
@@ -290,8 +296,8 @@ export function AdminProductsPage() {
       setVarComparePrice("");
       setShowAddVariantForm(false);
       void refreshVariants();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể tạo biến thể mới.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể tạo biến thể mới."));
     }
   };
 
@@ -323,8 +329,8 @@ export function AdminProductsPage() {
 
       setEditingVariantId(null);
       void refreshVariants();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể cập nhật biến thể.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể cập nhật biến thể."));
     }
   };
 
@@ -337,8 +343,8 @@ export function AdminProductsPage() {
       setErrorMessage("");
       await deleteProductVariant(accessToken, managingVariantsProduct.productId, variantId);
       void refreshVariants();
-    } catch (err: any) {
-      setErrorMessage(err?.message ?? "Không thể xóa biến thể. Biến thể có thể đang có lô hàng tồn kho.");
+    } catch (err: unknown) {
+      setErrorMessage(getRequestErrorMessage(err, "Không thể xóa biến thể. Biến thể có thể đang có lô hàng tồn kho."));
     }
   };
 

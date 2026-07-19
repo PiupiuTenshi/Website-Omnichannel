@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { getCategories, getProducts, searchSuggestions } from "../api/catalogApi";
 import { ProductCard } from "../components/ProductCard";
 import type { Category, PagedResponse, ProductListItem } from "../types/catalogTypes";
@@ -10,6 +10,8 @@ export function CatalogPage() {
   const storeSettings = useOutletContext<StoreSettings | null>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<PagedResponse<ProductListItem> | null>(null);
+  const [promotions, setPromotions] = useState<ProductListItem[]>([]);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
@@ -22,22 +24,6 @@ export function CatalogPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const productsHeaderRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [timeLeft, setTimeLeft] = useState(3 * 3600 + 12 * 60 + 45); // 03:12:45
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 3 * 3600 + 12 * 60 + 45));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
   useEffect(() => {
     let isMounted = true;
     void getCategories()
@@ -61,6 +47,52 @@ export function CatalogPage() {
       });
     return () => { isMounted = false; };
   }, [search, categoryId, page]);
+
+  useEffect(() => {
+    let isMounted = true;
+    void getProducts("", "", 1, 100)
+      .then((result) => {
+        if (isMounted) {
+          const activePromos = result.items.filter((product) => product.compareAtPrice !== null && product.compareAtPrice > product.sellingPrice);
+          setPromotions(activePromos);
+          
+          const endTimes = activePromos
+            .map(p => p.promotionEndAtUtc ? new Date(p.promotionEndAtUtc).getTime() : 0)
+            .filter(t => t > Date.now());
+            
+          if (endTimes.length > 0) {
+            setTimeLeft(Math.max(0, Math.min(...endTimes) - Date.now()));
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) setPromotions([]);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const intervalId = setInterval(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1000));
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [timeLeft]);
+
+  const formatTime = (ms: number) => {
+    if (ms <= 0) return "Đã kết thúc";
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 24) {
+       const days = Math.floor(hours / 24);
+       return `${days} ngày ${hours % 24} giờ`;
+    }
+    
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   // Debounced search suggestions
   useEffect(() => {
@@ -260,14 +292,28 @@ export function CatalogPage() {
         </div>
       </div>
 
-      {/* Flash Sale Mock Section */}
+      {promotions.length > 0 && (
+        <section className="catalog-page__flash-sale" aria-labelledby="promotion-heading">
+          <div className="flash-sale-header">
+            <h2 id="promotion-heading">Sản phẩm đang giảm giá</h2>
+            <span className="countdown-timer">Kết thúc trong {formatTime(timeLeft)}</span>
+          </div>
+          <div className="flash-sale-grid">
+            {promotions.slice(0, 4).map((product) => (
+              <ProductCard key={product.productId} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Flash Sale is disabled until it is backed by the promotion API. */}
+      {/*
       <div className="catalog-page__flash-sale">
         <div className="flash-sale-header">
           <h2>Khung giờ vàng, giảm sâu</h2>
           <span className="countdown-timer">Kết thúc trong {formatTime(timeLeft)}</span>
         </div>
         <div className="flash-sale-grid">
-          {/* Linked Items for Flash Sale */}
           <Link to="/products/ca-rot-da-lat" className="flash-sale-card hover-lift">
             <span className="discount-tag">-20%</span>
             <div className="fs-icon bg-success">🥕</div>
@@ -295,6 +341,7 @@ export function CatalogPage() {
         </div>
       </div>
 
+      */}
       <div className="catalog-page__section-header" ref={productsHeaderRef}>
         <h2>{categoryId ? "Sản phẩm theo danh mục" : "Tất cả sản phẩm"}</h2>
       </div>

@@ -26,16 +26,16 @@ function headers(accessToken?: string): HeadersInit {
   return h;
 }
 
-export function checkoutOrder(payload: { recipientName: string; recipientPhoneNumber: string; deliveryAddress: string; paymentMethod: "Cod" | "BankTransfer" }): Promise<OnlineOrder> {
-  return requestJson<OnlineOrder>("/online-orders/checkout", { method: "POST", headers: headers(), body: JSON.stringify(payload) });
+export function checkoutOrder(payload: { recipientName: string; recipientPhoneNumber: string; deliveryAddress: string; paymentMethod: "Cod" | "BankTransfer" }, accessToken?: string): Promise<OnlineOrder> {
+  return requestJson<OnlineOrder>("/online-orders/checkout", { method: "POST", headers: headers(accessToken), body: JSON.stringify(payload) });
 }
 
 export function getOnlineOrder(orderId: string, accessToken?: string): Promise<OnlineOrder> {
   return requestJson<OnlineOrder>(`/online-orders/${orderId}`, { headers: headers(accessToken) });
 }
 
-export function acceptQuote(orderId: string): Promise<OnlineOrder> {
-  return requestJson<OnlineOrder>(`/online-orders/${orderId}/accept-quote`, { method: "POST", headers: headers() });
+export function acceptQuote(orderId: string, accessToken?: string): Promise<OnlineOrder> {
+  return requestJson<OnlineOrder>(`/online-orders/${orderId}/accept-quote`, { method: "POST", headers: headers(accessToken) });
 }
 
 export function cancelOrder(orderId: string, accessToken?: string): Promise<OnlineOrder> {
@@ -58,6 +58,10 @@ export function markDelivering(orderId: string, accessToken: string): Promise<On
   return requestJson<OnlineOrder>(`/online-orders/${orderId}/delivering`, { method: "POST", headers: headers(accessToken) });
 }
 
+export function markPreparing(orderId: string, accessToken: string): Promise<OnlineOrder> {
+  return requestJson<OnlineOrder>(`/online-orders/${orderId}/preparing`, { method: "POST", headers: headers(accessToken) });
+}
+
 export function markDelivered(orderId: string, accessToken: string): Promise<OnlineOrder> {
   return requestJson<OnlineOrder>(`/online-orders/${orderId}/delivered`, { method: "POST", headers: headers(accessToken) });
 }
@@ -73,4 +77,3 @@ export function markReturned(orderId: string, accessToken: string): Promise<Onli
 export function getOnlineOrdersForAdmin(accessToken: string): Promise<OnlineOrder[]> {
   return requestJson<OnlineOrder[]>("/online-orders", { headers: headers(accessToken) });
 }
-

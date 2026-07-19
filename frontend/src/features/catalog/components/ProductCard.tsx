@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useCart } from "../../cart";
+import { getProductBySlug } from "../api/catalogApi";
 import type { ProductListItem } from "../types/catalogTypes";
 import "./ProductCard.css";
 
@@ -8,7 +11,26 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const categoryClass = getCategoryClass(product.categoryName);
-  const navigate = useNavigate();
+  const { addItem } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  async function addToCart() {
+    setIsAdding(true);
+    setAddError("");
+    try {
+      const detail = await getProductBySlug(product.slug);
+      const variant = detail.variants.find((candidate) => candidate.isActive);
+      if (variant === undefined) {
+        throw new Error("Product has no active variant.");
+      }
+      await addItem(variant.productVariantId, detail.allowsDecimal ? 0.1 : 1);
+    } catch {
+      setAddError("Không thể thêm sản phẩm vào giỏ hàng.");
+    } finally {
+      setIsAdding(false);
+    }
+  }
 
   return (
     <article className="product-card">
@@ -37,14 +59,18 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="product-card__footer">
           <div className="product-card__price-group">
             <span className="product-card__price">{formatCurrency(product.sellingPrice)}</span>
+            {product.compareAtPrice && product.compareAtPrice > product.sellingPrice && (
+              <span className="product-card__compare-price">{formatCurrency(product.compareAtPrice)}</span>
+            )}
             <span className="product-card__unit">/ {product.unitName}</span>
           </div>
-          <button type="button" className="product-card__add-btn" aria-label={`Chọn biến thể của ${product.name} để thêm vào giỏ`} onClick={() => navigate(`/products/${product.slug}`)}>
+          <button type="button" className="product-card__add-btn" aria-label={`Thêm ${product.name} vào giỏ hàng`} onClick={() => void addToCart()} disabled={isAdding}>
             <svg className="product-card__add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
           </button>
         </div>
+        {addError ? <p className="product-card__add-error" role="alert">{addError}</p> : null}
       </div>
     </article>
   );

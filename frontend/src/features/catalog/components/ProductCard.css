@@ -156,6 +156,13 @@
   color: var(--color-danger);
 }
 
+.product-card__compare-price {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  margin-top: -2px;
+}
+
 .product-card__unit {
   font-size: 0.75rem;
   color: var(--color-text-muted);
@@ -188,4 +195,16 @@
 .product-card__add-icon {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+.product-card__add-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.product-card__add-error {
+  margin: 0;
+  color: var(--color-danger, #b91c1c);
+  font-size: 0.75rem;
 }

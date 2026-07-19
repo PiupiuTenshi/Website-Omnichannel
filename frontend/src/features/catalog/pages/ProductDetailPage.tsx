@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../../../shared/api/apiClient";
-import { setCartItem } from "../../cart";
+import { useCart } from "../../cart";
 import { getProductBySlug } from "../api/catalogApi";
 import type { ProductDetail } from "../types/catalogTypes";
 import "./ProductDetailPage.css";
@@ -26,6 +26,7 @@ export function ProductDetailPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     setProduct(null);
@@ -77,7 +78,7 @@ export function ProductDetailPage() {
     setError("");
     setMessage("");
     try {
-      await setCartItem(selectedVariant.productVariantId, requestedQuantity);
+      await addItem(selectedVariant.productVariantId, requestedQuantity);
       const portionLabel = isWeightBased ? PORTION_PRESETS[selectedPortionIndex].label : `${requestedQuantity}`;
       setMessage(`Đã thêm ${product.name} (${portionLabel}) vào giỏ hàng.`);
     } catch (requestError) {
