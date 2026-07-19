@@ -51,3 +51,10 @@
   text-decoration: underline;
   color: var(--color-primary);
 }
+
+.admin-orders-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}

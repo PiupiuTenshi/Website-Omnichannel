@@ -5,5 +5,6 @@ export interface UserAccountSummary {
   emailConfirmed: boolean;
   phoneNumberConfirmed: boolean;
   isActive: boolean;
+  requiresInitialActivation: boolean;
   roles: string[];
 }

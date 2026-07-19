@@ -1,10 +1,24 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth";
-import { getOnlineOrdersForAdmin, type OnlineOrder } from "../../checkout/api/onlineOrdersApi";
+import {
+  getOnlineOrdersForAdmin,
+  markDelivered,
+  markDelivering,
+  markDeliveryFailed,
+  markPreparing,
+  markReturned,
+  type OnlineOrder
+} from "../../checkout/api/onlineOrdersApi";
 import "./AdminOrdersPage.css";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
+
+interface OrderStatusAction {
+  label: string;
+  className: string;
+  run: () => Promise<OnlineOrder>;
+}
 
 export function AdminOrdersPage() {
   const { session } = useAuth();
@@ -15,6 +29,8 @@ export function AdminOrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<OnlineOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +45,12 @@ export function AdminOrdersPage() {
       const data = await getOnlineOrdersForAdmin(accessToken);
       setOrders(data);
     } catch {
-      // Fallback mock data for testing/demo offline mode
+      setOrders([]);
+      setError("Không thể tải đơn hàng. Vui lòng kiểm tra kết nối và thử lại.");
+      return;
+
+      // Retained temporarily for source-history review; never render this data.
+      /*
       setOrders([
         {
           onlineOrderId: "a8e9f2b3-57bf-4f18-8742-1e96a2dcb512",
@@ -97,6 +118,7 @@ export function AdminOrdersPage() {
         }
       ]);
       setError("Không thể kết nối đến máy chủ. Đang hiển thị danh sách đơn mẫu để bạn trải nghiệm.");
+      */
     } finally {
       setLoading(false);
     }
@@ -130,6 +152,38 @@ export function AdminOrdersPage() {
 
     setFilteredOrders(result);
   }, [orders, searchQuery, statusFilter, paymentFilter]);
+
+  const getStatusAction = (order: OnlineOrder): OrderStatusAction | null => {
+    switch (order.status) {
+      case "Pending":
+      case "QuoteAccepted":
+      case "Confirmed":
+        return { label: "Chuẩn bị hàng", className: "btn--primary", run: () => markPreparing(order.onlineOrderId, accessToken) };
+      case "Preparing":
+        return { label: "Bắt đầu giao", className: "btn--primary", run: () => markDelivering(order.onlineOrderId, accessToken) };
+      case "Delivering":
+        return { label: "Đã giao", className: "btn--success", run: () => markDelivered(order.onlineOrderId, accessToken) };
+      case "DeliveryFailed":
+        return { label: "Hoàn trả", className: "btn--danger", run: () => markReturned(order.onlineOrderId, accessToken) };
+      default:
+        return null;
+    }
+  };
+
+  const updateOrderStatus = async (order: OnlineOrder, action: OrderStatusAction) => {
+    try {
+      setUpdatingOrderId(order.onlineOrderId);
+      setError("");
+      setMessage("");
+      const updatedOrder = await action.run();
+      setOrders((current) => current.map((item) => item.onlineOrderId === updatedOrder.onlineOrderId ? updatedOrder : item));
+      setMessage(`Đã cập nhật đơn ${updatedOrder.orderCode}: ${getStatusLabel(updatedOrder.status)}.`);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Không thể cập nhật trạng thái đơn hàng.");
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -195,6 +249,7 @@ export function AdminOrdersPage() {
       </header>
 
       {error && <div className="alert alert--info" role="status">{error}</div>}
+      {message && <div className="alert alert--success" role="status">{message}</div>}
 
       {/* Filters */}
       <section className="admin-orders-page__filters card" aria-label="Bộ lọc tìm kiếm">
@@ -298,13 +353,35 @@ export function AdminOrdersPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
+                        <div className="admin-orders-page__actions">
+                          {getStatusAction(o) && (
+                            <button
+                              type="button"
+                              className={`btn btn--sm ${getStatusAction(o)!.className}`}
+                              disabled={updatingOrderId === o.onlineOrderId}
+                              onClick={() => void updateOrderStatus(o, getStatusAction(o)!)}
+                            >
+                              {updatingOrderId === o.onlineOrderId ? "Đang cập nhật…" : getStatusAction(o)!.label}
+                            </button>
+                          )}
+                          {o.status === "Delivering" && (
+                            <button
+                              type="button"
+                              className="btn btn--sm btn--danger"
+                              disabled={updatingOrderId === o.onlineOrderId}
+                              onClick={() => void updateOrderStatus(o, { label: "Giao thất bại", className: "btn--danger", run: () => markDeliveryFailed(o.onlineOrderId, accessToken) })}
+                            >
+                              Giao thất bại
+                            </button>
+                          )}
                         <button
                           type="button"
-                          className="btn btn--sm btn--primary"
+                          className="btn btn--sm btn--outline"
                           onClick={() => navigate(`/orders/${o.onlineOrderId}`)}
                         >
                           🔍 Xử lý đơn
                         </button>
+                        </div>
                       </td>
                     </tr>
                   ))

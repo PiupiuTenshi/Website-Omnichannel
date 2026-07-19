@@ -39,12 +39,8 @@ export function InventoryBatchesPage() {
       const data = await getBatches(session.accessToken);
       setBatches(data);
     } catch {
-      setBatches([
-        { inventoryBatchId: "b1", productVariantId: "v1", supplierId: "s1", initialQuantity: 100, availableQuantity: 45, unitCost: 15000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 5*24*60*60*1000).toISOString(), status: 0, productName: "Táo đỏ Fuji", variantName: "Tiêu chuẩn", sku: "TAO-FUJI-STD", unitCode: "KG", supplierName: "Hợp tác xã rau sạch Đà Lạt" },
-        { inventoryBatchId: "b2", productVariantId: "v2", supplierId: "s2", initialQuantity: 50, availableQuantity: 0, unitCost: 35000, receivedAtUtc: new Date(Date.now() - 7*24*60*60*1000).toISOString(), manufacturedAtUtc: new Date(Date.now() - 8*24*60*60*1000).toISOString(), expiresAtUtc: new Date(Date.now() - 1*24*60*60*1000).toISOString(), status: 2, productName: "Cải ngọt hữu cơ", variantName: "Bó 500g", sku: "CN-OR-500G", unitCode: "KG", supplierName: "Công ty Cổ phần Nông sản Việt" },
-        { inventoryBatchId: "b3", productVariantId: "v3", supplierId: "s1", initialQuantity: 80, availableQuantity: 15, unitCost: 12000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 3*24*60*60*1000).toISOString(), status: 0, productName: "Cà chua Beef", variantName: "Tiêu chuẩn", sku: "CT-BF-STD", unitCode: "KG", supplierName: "Hợp tác xã rau sạch Đà Lạt" }
-      ]);
-      setError("Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu để bạn trải nghiệm.");
+      setBatches([]);
+      setError("Không thể tải danh sách lô hàng. Vui lòng kiểm tra kết nối rồi thử lại.");
     } finally {
       setLoading(false);
     }

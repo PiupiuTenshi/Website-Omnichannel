@@ -33,7 +33,6 @@ export function LowStockPage() {
   
   // Soạn lô hàng (Draft Batch) States
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
-  const [selectedSupplierId, setSelectedSupplierId] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
 
   // Initialize draft batches from localStorage
@@ -74,12 +73,13 @@ export function LowStockPage() {
       setError("");
       const data = await getLowStockItems(session.accessToken, minQty);
       setItems(data);
-    } catch {
-      setItems([
-        { productVariantId: "v3", productName: "Cải ngọt hữu cơ", variantName: "Bó 500g", sku: "CN-OR-500G", unitCode: "KG", availableQuantity: 2, suggestedPurchaseQuantity: minQty - 2, revenue: 1500000 },
-        { productVariantId: "v4", productName: "Cà chua Beef", variantName: "Tiêu chuẩn", sku: "CT-BF-STD", unitCode: "KG", availableQuantity: 3, suggestedPurchaseQuantity: minQty - 3, revenue: 890000 }
-      ]);
-      setError("Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu.");
+    } catch (requestError) {
+      setItems([]);
+      if (requestError instanceof Error) {
+        setError(requestError.message);
+        return;
+      }
+      setError("Không thể tải danh sách tồn thấp. Vui lòng kiểm tra kết nối rồi thử lại.");
     } finally {
       setLoading(false);
     }

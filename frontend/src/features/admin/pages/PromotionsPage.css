@@ -55,6 +55,99 @@
   border: 1px solid var(--color-danger);
 }
 
+.promotions-page__current-section,
+.promotions-page__new-section {
+  margin-bottom: var(--space-lg);
+}
+
+.promotions-page__section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.promotions-page__section-heading h2,
+.promotions-page__new-section > h2 {
+  margin: 0;
+}
+
+.promotions-page__section-heading p,
+.promotions-page__section-description {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-muted);
+}
+
+.promotions-page__count {
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-strong);
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.promotions-page__current-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-sm);
+}
+
+.promotions-page__current-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  background: var(--color-background-soft);
+}
+
+.promotions-page__current-item h3,
+.promotions-page__current-item p {
+  margin: 0;
+}
+
+.promotions-page__current-item h3 {
+  font-size: 1rem;
+}
+
+.promotions-page__current-item p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
+.promotions-page__current-item .promotions-page__current-time {
+  color: var(--color-text);
+}
+
+.promotions-page__current-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+.promotions-page__current-price del {
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
+.promotions-page__current-price strong {
+  color: var(--color-danger-strong);
+}
+
+.promotions-page__cancel-button {
+  margin-top: var(--space-sm);
+}
+
+.promotions-page__new-section > h3 {
+  margin: var(--space-lg) 0 var(--space-sm);
+}
+
 /* Controls and Filters */
 .promotions-page__controls {
   display: flex;
@@ -123,6 +216,12 @@
 .promotions-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+/* Promotion timing is configured once in the shared schedule panel, never per product row. */
+.promotions-table th:nth-child(5),
+.promotions-table td:nth-child(5) {
+  display: none;
 }
 
 .promotions-table th {
@@ -279,6 +378,7 @@
 
 /* Custom Promotion Dates styling */
 .inline-edit-dates {
+  display: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -316,4 +416,177 @@
   font-weight: 500;
   color: var(--color-text-muted);
   font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------- */
+/* Revamped Setup UI styles */
+/* ---------------------------------------------------- */
+
+.promotions-page__schedule-form {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.promotions-page__schedule-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-primary-light);
+  padding: var(--space-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.2);
+}
+
+.schedule-details h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: var(--color-primary-strong);
+}
+
+.schedule-details p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.promotions-page__candidate-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.promotions-page__candidate {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.promotions-page__candidate:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.candidate-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.candidate-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.candidate-sku {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.candidate-price {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.promotions-page__draft-section {
+  margin-top: var(--space-lg);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+  background: var(--color-background-soft);
+  border-radius: var(--border-radius-md);
+  font-style: italic;
+}
+
+.promotions-page__draft-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+.promotions-page__draft-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.promotions-page__draft-table th {
+  background: var(--color-background-soft);
+  padding: var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.promotions-page__draft-table td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.promotions-page__draft-table tr:last-child td {
+  border-bottom: none;
+}
+
+.draft-product-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.draft-variant-name {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.draft-original-price {
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.draft-price-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  max-width: 150px;
+}
+
+.draft-price-input {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.currency-suffix {
+  position: absolute;
+  right: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.draft-actions {
+  text-align: right;
+}
+
+.promotions-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
 }

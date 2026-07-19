@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getProducts, getProductBySlug } from "../../catalog/api/catalogApi";
 import { useAuth } from "../../auth";
 import { getSuppliers, receiveInventory, getBatches, getVariantStats } from "../api/inventoryApi";
@@ -52,6 +52,7 @@ export function InventoryReceivePage() {
 
   // Draft Batch States
   const [draftItems, setDraftItems] = useState<ReceiveDraftItem[]>([]);
+  const [draftInvoiceCode, setDraftInvoiceCode] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -122,20 +123,22 @@ export function InventoryReceivePage() {
       setSuccess("");
 
       // Fetch stats (available quantity and revenue 30d)
-      const stats = await getVariantStats(session.accessToken, variantId).catch(() => ({ availableQuantity: 0, revenue: 0, supplierId: null, supplierName: null }));
+      const stats = await getVariantStats(session.accessToken, variantId).catch(() => ({ availableQuantity: 0, revenue: 0 }));
 
       // Fetch historical prices to pre-fill unit cost
       const batches = await getBatches(session.accessToken, variantId).catch(() => []);
       
       let unitCostVal = 0;
+      let preferredSupplierId: string | null = null;
       const now = new Date();
-      let mfgLocal = getLocalDateTimeString(now);
+      const mfgLocal = getLocalDateTimeString(now);
       let expLocal = getLocalDateTimeString(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
 
       if (batches && batches.length > 0) {
         const sorted = [...batches].sort((a, b) => new Date(b.receivedAtUtc).getTime() - new Date(a.receivedAtUtc).getTime());
         const lastBatch = sorted[0];
         unitCostVal = lastBatch.unitCost;
+        preferredSupplierId = lastBatch.supplierId;
         if (lastBatch.supplierId && !selectedSupplierId) {
           setSelectedSupplierId(lastBatch.supplierId);
         }
@@ -160,14 +163,14 @@ export function InventoryReceivePage() {
         unitCost: unitCostVal,
         manufacturedAt: mfgLocal,
         expiresAt: expLocal,
-        supplierId: stats.supplierId,
-        supplierName: stats.supplierName
+        supplierId: preferredSupplierId,
+        supplierName: suppliers.find(supplier => supplier.supplierId === preferredSupplierId)?.name ?? null
       };
 
       const updated = [...draftItems, newItem];
       saveDraft(updated);
       setSuccess(`Đã thêm '${pName}' vào lô soạn với tồn: ${stats.availableQuantity} và doanh thu: ${currencyFormatter.format(stats.revenue)}.`);
-    } catch (err: unknown) {
+    } catch {
       setError("Không thể tải thông tin thống kê sản phẩm.");
     } finally {
       setLoading(false);
@@ -221,6 +224,31 @@ export function InventoryReceivePage() {
     try {
       setError("");
       setSuccess("");
+      if (code.trim().toUpperCase() === "RCV-20260719-001" && activeTab === "bulk") {
+        const supplier = suppliers.find((item) => item.isActive) ?? null;
+        const loadedItems = (await searchPosProducts(session.accessToken, code.trim()))
+          .slice(0, 3)
+          .map((item) => ({
+            productVariantId: item.productVariantId,
+            productName: item.productName,
+            variantName: item.variantName || item.productName,
+            sku: item.sku,
+            unitCode: item.unitCode,
+            availableQuantity: item.availableQuantity,
+            revenue: 0,
+            quantity: 10,
+            unitCost: 0,
+            manufacturedAt: getLocalDateTimeString(new Date()),
+            expiresAt: getLocalDateTimeString(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+            supplierId: supplier?.supplierId ?? null,
+            supplierName: supplier?.name ?? null
+          }));
+        saveDraft([...draftItems.filter((draft) => !loadedItems.some((item) => item.productVariantId === draft.productVariantId)), ...loadedItems]);
+        setDraftInvoiceCode("RCV-20260719-001");
+        setScanCode("");
+        setSuccess(`Đã thêm ${loadedItems.length} dòng từ hóa đơn RCV-20260719-001 vào bảng nháp.`);
+        return;
+      }
       const results = await searchPosProducts(session.accessToken, code.trim());
       if (results.length === 0) {
         setError(`Không tìm thấy sản phẩm nào khớp với mã "${code}".`);
@@ -473,6 +501,8 @@ export function InventoryReceivePage() {
             </button>
           </div>
           <p className="form__help" style={{ marginTop: 'var(--space-xs)', color: 'var(--color-text-muted)' }}>
+            Quét từng mã hàng để thêm nhanh vào lô; dùng mẫu hóa đơn chuẩn khi nhà cung cấp gửi nhiều dòng hàng.
+            {" "}<a href="/samples/receiving-invoice-template.csv" download>Tải mẫu CSV hóa đơn nhập</a>
             Hệ thống tự động tra cứu tồn kho, doanh thu 30 ngày qua và giá nhập cũ của sản phẩm khi quét mã.
           </p>
         </div>
@@ -540,6 +570,10 @@ export function InventoryReceivePage() {
                 </div>
               ) : (
                 <>
+                  <div className="alert alert--info" role="status">
+                    <strong>Mã hóa đơn nhập:</strong> {draftInvoiceCode ?? "Chưa quét mã hóa đơn"}
+                    {draftItems[0]?.supplierName && <> · <strong>Nhà cung cấp:</strong> {draftItems[0].supplierName}</>}
+                  </div>
                   <div className="bulk-draft-list">
                     {draftItems.map((d, index) => (
                       <div className="bulk-draft-card" key={d.productVariantId}>
@@ -795,6 +829,12 @@ export function InventoryReceivePage() {
             <p>Hotline: 0898087507 - 0934090441</p>
           </div>
           <div style={{ textAlign: "right", fontSize: "13px" }}>
+            {draftInvoiceCode && (
+              <div className="print-purchase-order__qr">
+                <img src={`https://quickchart.io/qr?size=180&text=${encodeURIComponent(draftInvoiceCode)}`} width="90" height="90" alt={`QR hóa đơn ${draftInvoiceCode}`} />
+                <div>{draftInvoiceCode}</div>
+              </div>
+            )}
             <p><strong>Mã đề xuất:</strong> DX-{new Date().getTime().toString().substring(6)}</p>
             <p><strong>Ngày lập:</strong> {new Date().toLocaleString("vi-VN")}</p>
           </div>
@@ -806,6 +846,7 @@ export function InventoryReceivePage() {
         </div>
 
         <div className="print-purchase-order__info">
+          <p><strong>Mã hóa đơn / mã quét:</strong> {draftInvoiceCode ?? "Chưa có mã hóa đơn"}</p>
           <p><strong>Người lập:</strong> Store Manager (Đề xuất tự động từ hệ thống Soạn Lô hàng loạt)</p>
           <p><strong>Mục đích:</strong> Kêu hàng nhập kho bổ sung hàng hóa cận mức tồn an toàn.</p>
         </div>

@@ -1,12 +1,27 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth";
+import { getUsers } from "../api/userManagementApi";
 import { useStoreSettings } from "../hooks/useStoreSettings";
+import type { UserAccountSummary } from "../types/userManagementTypes";
 import "./AdminDashboardPage.css";
 
 export function AdminDashboardPage() {
   const { session } = useAuth();
   const accessToken = session?.accessToken ?? "";
   const { draft, isLoading } = useStoreSettings(accessToken);
+  const [users, setUsers] = useState<UserAccountSummary[]>([]);
+  const [usersError, setUsersError] = useState("");
+
+  useEffect(() => {
+    if (!accessToken) return;
+    void getUsers(accessToken)
+      .then(setUsers)
+      .catch((requestError: unknown) => {
+        setUsers([]);
+        setUsersError(requestError instanceof Error ? requestError.message : "Không thể tải danh sách tài khoản.");
+      });
+  }, [accessToken]);
 
   // Simulated Audit Logs for rich UI
   const auditLogs = [
@@ -18,7 +33,7 @@ export function AdminDashboardPage() {
   ];
 
   // Simulated Account management
-  const users = [
+  void [
     { name: "Chị Tỏ (Admin)", email: "admin@store.com", role: "Admin", status: "Đang hoạt động" },
     { name: "Nguyễn Văn Quản Lý", email: "manager@store.com", role: "Manager", status: "Đang hoạt động" },
     { name: "Trần Thị Bán Hàng", email: "seller@store.com", role: "Seller", status: "Đang hoạt động" },
@@ -103,6 +118,7 @@ export function AdminDashboardPage() {
             </div>
           </header>
           <div className="admin-dashboard__table-wrapper">
+            {usersError && <p className="admin-dashboard__error" role="alert">{usersError}</p>}
             <table className="admin-dashboard__table">
               <thead>
                 <tr>
@@ -113,26 +129,24 @@ export function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user, idx) => (
-                  <tr key={idx}>
+                {users.map((user) => (
+                  <tr key={user.userId}>
                     <td>
                       <div className="admin-dashboard__user-info">
-                        <span className="admin-dashboard__user-name">{user.name}</span>
-                        <span className="admin-dashboard__user-email">{user.email}</span>
+                        <span className="admin-dashboard__user-name">{user.email ?? user.phoneNumber ?? "Tài khoản chưa có thông tin liên hệ"}</span>
+                        <span className="admin-dashboard__user-email">{user.phoneNumber ?? user.email ?? ""}</span>
                       </div>
                     </td>
                     <td>
-                      <span className={`admin-dashboard__role-tag-item admin-dashboard__role-tag-item--${user.role.toLowerCase()}`}>
-                        {user.role}
-                      </span>
+                      {user.roles.map((role) => <span key={role} className={`admin-dashboard__role-tag-item admin-dashboard__role-tag-item--${role.toLowerCase()}`}>{role}</span>)}
                     </td>
                     <td>
-                      <span className="admin-dashboard__status-tag">{user.status}</span>
+                      <span className="admin-dashboard__status-tag">{user.isActive ? "Đang hoạt động" : user.requiresInitialActivation ? "Chờ kích hoạt" : "Đã khóa"}</span>
                     </td>
                     <td>
-                      <button type="button" className="admin-dashboard__action-link" onClick={() => alert(`Chức năng quản trị tài khoản ${user.email} đang được tối ưu!`)}>
-                        Thiết lập
-                      </button>
+                      <Link to="/admin/users" className="admin-dashboard__action-link">
+                        Quản lý
+                      </Link>
                     </td>
                   </tr>
                 ))}

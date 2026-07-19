@@ -41,9 +41,12 @@ export function AuditLogsPage() {
   // Fetch log data from API on mount
   useEffect(() => {
     if (!accessToken) return;
-    setLoading(true);
-    getAuditLogs(accessToken)
+      setLoading(true);
+      getAuditLogs(accessToken)
       .then((data) => {
+        setAuditLogs(data);
+        return;
+
         // If backend logs exist, merge them with the initial fallback logs
         // newer entries from backend are shown first
         if (data.length > 0) {
@@ -60,6 +63,9 @@ export function AuditLogsPage() {
         }
       })
       .catch(() => {
+        setAuditLogs([]);
+        return;
+
         setAuditLogs(initialAuditLogs);
       })
       .finally(() => {

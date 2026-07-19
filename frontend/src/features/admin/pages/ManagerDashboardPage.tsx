@@ -29,23 +29,15 @@ export function ManagerDashboardPage() {
         setSuppliers(loadedSuppliers);
         setBatches(loadedBatches);
         setLowStockItems(loadedLowStock);
-      } catch (err) {
-        console.error("Lỗi khi tải dữ liệu Manager Dashboard:", err);
-        // Fallback to high-quality demo dataset
-        setSuppliers([
-          { supplierId: "s1", name: "Hợp tác xã rau sạch Đà Lạt", contactName: "Nguyễn Văn A", phoneNumber: "0912345678", email: "contact@dalatclean.vn", address: "Đà Lạt, Lâm Đồng", isActive: true },
-          { supplierId: "s2", name: "Công ty Cổ phần Nông sản Việt", contactName: "Trần Thị B", phoneNumber: "0987654321", email: "sales@nongsanviet.com", address: "Hóc Môn, TP. HCM", isActive: true }
-        ]);
-        setBatches([
-          { inventoryBatchId: "b1", productVariantId: "v1", supplierId: "s1", initialQuantity: 100, availableQuantity: 45, unitCost: 15000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 5*24*60*60*1000).toISOString(), status: 0 },
-          { inventoryBatchId: "b2", productVariantId: "v2", supplierId: "s2", initialQuantity: 50, availableQuantity: 0, unitCost: 35000, receivedAtUtc: new Date(Date.now() - 7*24*60*60*1000).toISOString(), manufacturedAtUtc: new Date(Date.now() - 8*24*60*60*1000).toISOString(), expiresAtUtc: new Date(Date.now() - 1*24*60*60*1000).toISOString(), status: 2 },
-          { inventoryBatchId: "b3", productVariantId: "v3", supplierId: "s1", initialQuantity: 80, availableQuantity: 15, unitCost: 12000, receivedAtUtc: new Date().toISOString(), manufacturedAtUtc: new Date().toISOString(), expiresAtUtc: new Date(Date.now() + 3*24*60*60*1000).toISOString(), status: 0 }
-        ]);
-        setLowStockItems([
-          { productVariantId: "v3", productName: "Cải ngọt hữu cơ", variantName: "Bó 500g", sku: "CN-OR-500G", unitCode: "KG", availableQuantity: 2, suggestedPurchaseQuantity: 3 },
-          { productVariantId: "v4", productName: "Cà chua Beef", variantName: "Tiêu chuẩn", sku: "CT-BF-STD", unitCode: "KG", availableQuantity: 3, suggestedPurchaseQuantity: 2 }
-        ]);
-        setError("Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu mẫu để bạn trải nghiệm.");
+      } catch (requestError) {
+        setSuppliers([]);
+        setBatches([]);
+        setLowStockItems([]);
+        if (requestError instanceof Error) {
+          setError(requestError.message);
+          return;
+        }
+        setError("Không thể tải dữ liệu quản trị. Vui lòng kiểm tra kết nối rồi thử lại.");
       } finally {
         setIsLoading(false);
       }

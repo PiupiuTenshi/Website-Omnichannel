@@ -1,0 +1,17 @@
+.price-tag-page { padding-block: var(--space-xl); }
+.price-tag-page__header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-md); margin-bottom: var(--space-lg); }
+.price-tag-page__header h1, .price-tag-page__preview-panel h2 { margin: 0; }
+.price-tag-page__header p { margin: var(--space-xs) 0 0; color: var(--color-text-muted); }
+.price-tag-page__content { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, .8fr); gap: var(--space-lg); align-items: start; }
+.price-tag-page__search-panel, .price-tag-page__preview-panel { padding: var(--space-lg); }
+.price-tag-page__results { display: grid; gap: var(--space-xs); margin-top: var(--space-md); max-height: 480px; overflow-y: auto; }
+.price-tag-page__result { display: flex; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--border-radius-md); background: var(--color-surface); cursor: pointer; text-align: left; }
+.price-tag-page__result:hover { border-color: var(--color-primary); background: var(--color-primary-light); }
+.price-tag-page__result span { display: grid; gap: 3px; }.price-tag-page__result small { color: var(--color-text-muted); }
+.price-tag-page__error { color: var(--color-danger-strong); margin: var(--space-sm) 0 0; }
+.price-tag-page__empty { color: var(--color-text-muted); text-align: center; padding: var(--space-xl) 0; }
+.price-tag-print { width: 40mm; min-height: 60mm; box-sizing: border-box; margin: var(--space-lg) auto; padding: 4mm 3mm; border: 1px dashed #64748b; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; text-align: center; font-family: Arial, sans-serif; }
+.price-tag-print__brand { font-size: 10pt; font-weight: 800; }.price-tag-print__title { margin-top: 4mm; font-size: 11pt; font-weight: 700; }.price-tag-print__variant, .price-tag-print__sku { margin-top: 2mm; font-size: 8pt; }.price-tag-print__barcode { margin-top: 5mm; font-family: monospace; font-size: 12pt; letter-spacing: 1px; }.price-tag-print__barcode span { display: block; margin-top: 1mm; font-size: 7pt; letter-spacing: 0; }.price-tag-print__price { margin-top: auto; font-size: 16pt; font-weight: 800; }
+.price-tag-page__print-button { display: block; margin: 0 auto; }
+@media (max-width: 760px) { .price-tag-page__content { grid-template-columns: 1fr; }.price-tag-page__header { align-items: stretch; flex-direction: column; } }
+@media print { @page { size: 40mm 60mm; margin: 0; } body * { visibility: hidden; } .price-tag-print, .price-tag-print * { visibility: visible; } .price-tag-print { position: fixed; inset: 0; margin: 0; width: 40mm; min-height: 60mm; border: 0; } }

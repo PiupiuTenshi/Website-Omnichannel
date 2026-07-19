@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth";
 import { checkoutPos, searchPosProducts } from "../api/posApi";
 import type { PosCartItem, PosProduct } from "../types/posTypes";
@@ -17,6 +18,7 @@ interface SuccessOrder {
 
 export function PosPage() {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<PosProduct[]>([]);
   const [cart, setCart] = useState<PosCartItem[]>([]);
@@ -29,7 +31,7 @@ export function PosPage() {
   const [weighingProduct, setWeighingProduct] = useState<PosProduct | null>(null);
   const [vegetableWeight, setVegetableWeight] = useState("1.0");
   const [showPrintBill, setShowPrintBill] = useState(false);
-  const [tagProduct, setTagProduct] = useState<PosCartItem | PosProduct | null>(null);
+  const [tagProduct] = useState<PosCartItem | PosProduct | null>(null);
 
   // Mobile View
   const [showMobileCart, setShowMobileCart] = useState(false);
@@ -42,6 +44,39 @@ export function PosPage() {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    void document.documentElement.requestFullscreen?.().catch(() => {
+      // Browsers may require a direct user gesture; the POS still uses the dedicated full-screen layout.
+    });
+
+    return () => {
+      if (document.fullscreenElement) {
+        void document.exitFullscreen?.();
+      }
+    };
+  }, []);
+
+  const exitPos = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.();
+    }
+    navigate("/seller/dashboard");
+  };
+
+  const printReceipt = () => {
+    const wasFullscreen = document.fullscreenElement !== null;
+    if (wasFullscreen) {
+      window.addEventListener("afterprint", () => {
+        if (!document.fullscreenElement) {
+          void document.documentElement.requestFullscreen?.().catch(() => {
+            // The dedicated POS layout remains available if the browser rejects restoring full screen.
+          });
+        }
+      }, { once: true });
+    }
+    window.print();
+  };
 
   const addProductToCart = useCallback((prod: PosProduct, weight?: number) => {
     if (prod.availableQuantity <= 0) {
@@ -228,6 +263,12 @@ export function PosPage() {
 
   return (
     <section className="pos-page" aria-label="POS Register">
+      <button type="button" className="pos-exit-button" onClick={exitPos} aria-label="Thoát quầy bán hàng">
+        Thoát POS
+      </button>
+      <button type="button" className="pos-tag-page-button" onClick={() => navigate("/seller/price-tags")}>
+        Trang in tag giá
+      </button>
       <div className="pos-layout">
         
         {/* Main Content Area */}
@@ -325,13 +366,6 @@ export function PosPage() {
                         <td>{(item.quantity * item.price).toLocaleString()} đ</td>
                         <td>
                           <div className="pos-row-actions">
-                            <button
-                              type="button"
-                              className="btn btn--secondary btn--sm"
-                              onClick={() => setTagProduct(item)}
-                            >
-                              In Tag
-                            </button>
                             <button
                               type="button"
                               className="btn btn--danger btn--sm"
@@ -582,7 +616,7 @@ export function PosPage() {
               <button
                 type="button"
                 className="btn btn--primary"
-                onClick={() => window.print()}
+                onClick={printReceipt}
               >
                 In hóa đơn (58mm)
               </button>
@@ -614,7 +648,7 @@ export function PosPage() {
               <button
                 type="button"
                 className="btn btn--secondary"
-                onClick={() => setTagProduct(null)}
+                onClick={() => undefined}
               >
                 Đóng
               </button>

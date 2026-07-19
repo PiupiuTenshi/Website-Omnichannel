@@ -1,7 +1,31 @@
 .pos-page {
+  min-height: 100vh;
   padding: var(--space-lg);
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
+  position: relative;
+}
+
+.pos-exit-button {
+  position: fixed;
+  z-index: 20;
+  top: var(--space-md);
+  right: var(--space-md);
+  min-width: 7rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-danger);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pos-tag-page-button {
+  position: fixed;
+  top: 16px;
+  right: 132px;
+  z-index: 20;
 }
 
 .pos-layout {

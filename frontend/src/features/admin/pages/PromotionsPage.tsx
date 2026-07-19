@@ -1,462 +1,293 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth";
-import { getProductsForAdmin, getProductForAdminById, updateProductVariant } from "../../catalog/api/catalogApi";
-import type { ProductVariant } from "../../catalog/types/catalogTypes";
+import { getProductForAdminById, getProductsForAdmin, updateProductVariant } from "../../catalog/api/catalogApi";
 import "./PromotionsPage.css";
 
-interface FlatVariantItem {
+interface DraftPromotionItem {
   productId: string;
-  productName: string;
   productVariantId: string;
-  name: string;
+  productName: string;
+  variantName: string;
   sku: string;
   barcode: string | null;
   sellingPrice: number;
-  compareAtPrice: number | null;
+  salePrice: string;
   isActive: boolean;
-  rowVersion: string;
-  promotionStartAtUtc?: string | null;
-  promotionEndAtUtc?: string | null;
 }
 
-const currencyFormatter = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-  maximumFractionDigits: 0
+interface CurrentPromotionItem extends Omit<DraftPromotionItem, "salePrice"> {
+  originalPrice: number;
+  promotionStartAtUtc: string;
+  promotionEndAtUtc: string;
+}
+
+const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
+  dateStyle: "short",
+  timeStyle: "short"
 });
 
-function toLocalDateTimeString(utcString: string | null | undefined): string {
-  if (!utcString) return "";
-  const d = new Date(utcString);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatDateTime(utcString: string | null | undefined): string {
-  if (!utcString) return "Vô thời hạn";
-  try {
-    const date = new Date(utcString);
-    if (isNaN(date.getTime())) return "Vô thời hạn";
-    return date.toLocaleString("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch {
-    return "Vô thời hạn";
-  }
+function isCurrentPromotion(item: CurrentPromotionItem, now: Date) {
+  return item.originalPrice > item.sellingPrice
+    && new Date(item.promotionStartAtUtc) <= now
+    && now < new Date(item.promotionEndAtUtc);
 }
 
 export function PromotionsPage() {
   const { session } = useAuth();
   const accessToken = session?.accessToken ?? "";
-
-  const [items, setItems] = useState<FlatVariantItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [scheduleConfirmed, setScheduleConfirmed] = useState(false);
+  const [query, setQuery] = useState("");
+  const [candidates, setCandidates] = useState<DraftPromotionItem[]>([]);
+  const [draft, setDraft] = useState<DraftPromotionItem[]>([]);
+  const [currentPromotions, setCurrentPromotions] = useState<CurrentPromotionItem[]>([]);
+  const [loadingCurrentPromotions, setLoadingCurrentPromotions] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [cancellingPromotionId, setCancellingPromotionId] = useState<string | null>(null);
 
-  // Filters
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">("all");
-
-  // Inline edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editPrice, setEditPrice] = useState("");
-  const [editComparePrice, setEditComparePrice] = useState("");
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
-
-  const loadData = useCallback(async () => {
+  const loadCurrentPromotions = useCallback(async () => {
     if (!accessToken) return;
-    setLoading(true);
-    setError("");
+
+    setLoadingCurrentPromotions(true);
     try {
-      // Fetch products (limit 100 for batch promotion management)
-      const res = await getProductsForAdmin(accessToken, "", "", 1, 100);
-      
-      // Load details for all products to get variants
-      const detailsList = await Promise.all(
-        res.items.map((p) => getProductForAdminById(accessToken, p.productId).catch(() => null))
-      );
-
-      // Flatten list
-      const flatList: FlatVariantItem[] = [];
-      detailsList.forEach((detail) => {
-        if (!detail) return;
-        detail.variants.forEach((v) => {
-          flatList.push({
-            productId: detail.productId,
-            productName: detail.name,
-            productVariantId: v.productVariantId,
-            name: v.name,
-            sku: v.sku,
-            barcode: v.barcode,
-            sellingPrice: v.sellingPrice,
-            compareAtPrice: v.compareAtPrice,
-            isActive: v.isActive,
-            rowVersion: v.rowVersion,
-            promotionStartAtUtc: v.promotionStartAtUtc,
-            promotionEndAtUtc: v.promotionEndAtUtc
-          });
-        });
-      });
-
-      setItems(flatList);
+      const result = await getProductsForAdmin(accessToken, "", "", 1, 100);
+      const details = await Promise.all(result.items.map((product) => getProductForAdminById(accessToken, product.productId)));
+      const now = new Date();
+      setCurrentPromotions(details.flatMap((product) => product.variants
+        .filter((variant) => variant.isActive && variant.compareAtPrice !== null && variant.promotionStartAtUtc && variant.promotionEndAtUtc)
+        .map((variant) => ({
+          productId: product.productId,
+          productVariantId: variant.productVariantId,
+          productName: product.name,
+          variantName: variant.name,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          sellingPrice: variant.sellingPrice,
+          originalPrice: variant.compareAtPrice!,
+          isActive: variant.isActive,
+          promotionStartAtUtc: variant.promotionStartAtUtc!,
+          promotionEndAtUtc: variant.promotionEndAtUtc!
+        }))
+        .filter((item) => isCurrentPromotion(item, now))));
     } catch {
-      setError("Không thể kết nối đến máy chủ. Đang hiển thị danh sách mẫu.");
-      setItems([
-        { productId: "p1", productName: "Táo Fuji hữu cơ", productVariantId: "v1", name: "Hộp 1kg", sku: "TF-OR-1KG", barcode: "893123456789", sellingPrice: 95000, compareAtPrice: 120000, isActive: true, rowVersion: "", promotionStartAtUtc: null, promotionEndAtUtc: null },
-        { productId: "p1", productName: "Táo Fuji hữu cơ", productVariantId: "v2", name: "Túi 500g", sku: "TF-OR-500G", barcode: "893123456790", sellingPrice: 55000, compareAtPrice: null, isActive: true, rowVersion: "", promotionStartAtUtc: null, promotionEndAtUtc: null },
-        { productId: "p2", productName: "Xoài Cát Hòa Lộc", productVariantId: "v3", name: "Hộp 2kg", sku: "XC-HL-2KG", barcode: "893234567890", sellingPrice: 160000, compareAtPrice: 190000, isActive: true, rowVersion: "", promotionStartAtUtc: null, promotionEndAtUtc: null },
-        { productId: "p3", productName: "Nước dừa tươi", productVariantId: "v4", name: "Chai 350ml", sku: "ND-350ML", barcode: "893345678901", sellingPrice: 15000, compareAtPrice: null, isActive: true, rowVersion: "", promotionStartAtUtc: null, promotionEndAtUtc: null }
-      ]);
+      setError("Không thể tải chương trình giảm giá hiện tại.");
     } finally {
-      setLoading(false);
+      setLoadingCurrentPromotions(false);
     }
   }, [accessToken]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadCurrentPromotions();
+  }, [loadCurrentPromotions]);
 
-  const startEdit = (item: FlatVariantItem) => {
-    setEditingId(item.productVariantId);
-    setEditPrice(item.sellingPrice.toString());
-    setEditComparePrice(item.compareAtPrice ? item.compareAtPrice.toString() : "");
-    setEditStartDate(item.promotionStartAtUtc ? toLocalDateTimeString(item.promotionStartAtUtc) : "");
-    setEditEndDate(item.promotionEndAtUtc ? toLocalDateTimeString(item.promotionEndAtUtc) : "");
+  useEffect(() => {
+    if (!scheduleConfirmed || !accessToken) return;
+    void getProductsForAdmin(accessToken, query, "", 1, 30).then(async (result) => {
+      const details = await Promise.all(result.items.map((product) => getProductForAdminById(accessToken, product.productId)));
+      setCandidates(details.flatMap((product) => product.variants.filter((variant) => variant.isActive).map((variant) => ({
+        productId: product.productId, productVariantId: variant.productVariantId, productName: product.name,
+        variantName: variant.name, sku: variant.sku, barcode: variant.barcode, sellingPrice: variant.sellingPrice,
+        salePrice: variant.sellingPrice.toString(), isActive: variant.isActive
+      }))));
+    }).catch(() => setError("Không thể tải sản phẩm."));
+  }, [accessToken, query, scheduleConfirmed]);
+
+  const visibleCandidates = useMemo(() => candidates.filter((item) => !draft.some((selected) => selected.productVariantId === item.productVariantId)), [candidates, draft]);
+
+  const confirmSchedule = () => {
+    if (!startAt || !endAt || new Date(startAt) >= new Date(endAt)) { setError("Chọn thời gian bắt đầu và kết thúc hợp lệ."); return; }
+    setError(""); setScheduleConfirmed(true);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditPrice("");
-    setEditComparePrice("");
-    setEditStartDate("");
-    setEditEndDate("");
+  const applyPromotion = async () => {
+    if (!accessToken || draft.length === 0) return;
+    const startUtc = new Date(startAt).toISOString(); const endUtc = new Date(endAt).toISOString();
+    if (draft.some((item) => Number(item.salePrice) <= 0 || Number(item.salePrice) >= item.sellingPrice)) { setError("Giá giảm phải lớn hơn 0 và nhỏ hơn giá hiện tại."); return; }
+    try {
+      setSaving(true); setError(""); setMessage(`Đang áp dụng giảm giá cho ${draft.length} sản phẩm…`);
+      await Promise.all(draft.map((item) => updateProductVariant(accessToken, item.productId, item.productVariantId, {
+        name: item.variantName, sku: item.sku, barcode: item.barcode, sellingPrice: Number(item.salePrice),
+        compareAtPrice: item.sellingPrice, isActive: item.isActive, promotionStartAtUtc: startUtc, promotionEndAtUtc: endUtc
+      })));
+      setMessage(`Đã áp dụng giảm giá thành công cho ${draft.length} sản phẩm, từ ${new Date(startAt).toLocaleString("vi-VN")} đến ${new Date(endAt).toLocaleString("vi-VN")}.`); setDraft([]);
+      void loadCurrentPromotions();
+    } catch (requestError) { setMessage(""); setError(requestError instanceof Error ? requestError.message : "Không thể lưu chương trình giảm giá."); }
+    finally { setSaving(false); }
   };
 
-  const handleUpdateDiscount = async (item: FlatVariantItem) => {
-    if (!accessToken) return;
-    
-    const priceNum = Number(editPrice);
-    const comparePriceNum = editComparePrice ? Number(editComparePrice) : null;
-
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setError("Giá bán mới phải lớn hơn 0.");
-      return;
-    }
-    if (comparePriceNum !== null && (isNaN(comparePriceNum) || comparePriceNum <= priceNum)) {
-      setError("Giá gốc cũ (để so sánh) phải lớn hơn Giá bán khuyến mãi.");
-      return;
-    }
-
-    let startUtc: string | null = null;
-    let endUtc: string | null = null;
-
-    if (editStartDate) {
-      startUtc = new Date(editStartDate).toISOString();
-    }
-    if (editEndDate) {
-      endUtc = new Date(editEndDate).toISOString();
-    }
-
-    if (startUtc && endUtc && new Date(startUtc) > new Date(endUtc)) {
-      setError("Thời gian bắt đầu phải trước thời gian kết thúc.");
-      return;
-    }
+  const cancelPromotion = async (item: CurrentPromotionItem) => {
+    if (!accessToken || !window.confirm(`Hủy giảm giá cho "${item.productName} - ${item.variantName}"? Giá bán sẽ được khôi phục về ${item.originalPrice.toLocaleString("vi-VN")} đ.`)) return;
 
     try {
+      setCancellingPromotionId(item.productVariantId);
       setError("");
-      setSuccess("");
-      
-      const payload = {
-        name: item.name,
+      setMessage("");
+      await updateProductVariant(accessToken, item.productId, item.productVariantId, {
+        name: item.variantName,
         sku: item.sku,
         barcode: item.barcode,
-        sellingPrice: priceNum,
-        compareAtPrice: comparePriceNum,
-        isActive: item.isActive,
-        promotionStartAtUtc: startUtc,
-        promotionEndAtUtc: endUtc
-      };
-
-      await updateProductVariant(accessToken, item.productId, item.productVariantId, payload);
-      setSuccess(`Cập nhật chương trình giảm giá cho sản phẩm '${item.productName}' thành công.`);
-      setEditingId(null);
-      void loadData();
-    } catch {
-      setError("Không thể cập nhật giá bán của sản phẩm. Vui lòng kiểm tra lại ràng buộc giá.");
-    }
-  };
-
-  const handleRemoveDiscount = async (item: FlatVariantItem) => {
-    if (!accessToken) return;
-    
-    const confirmRemove = window.confirm(`Bạn có muốn hủy giảm giá cho sản phẩm "${item.productName} - ${item.name}" không?`);
-    if (!confirmRemove) return;
-
-    try {
-      setError("");
-      setSuccess("");
-
-      const payload = {
-        name: item.name,
-        sku: item.sku,
-        barcode: item.barcode,
-        sellingPrice: item.sellingPrice,
-        compareAtPrice: null, // Remove compare-at price
+        sellingPrice: item.originalPrice,
+        compareAtPrice: null,
         isActive: item.isActive,
         promotionStartAtUtc: null,
         promotionEndAtUtc: null
-      };
-
-      await updateProductVariant(accessToken, item.productId, item.productVariantId, payload);
-      setSuccess(`Hủy chương trình giảm giá cho sản phẩm '${item.productName}' thành công.`);
-      void loadData();
-    } catch {
-      setError("Không thể hủy giảm giá.");
+      });
+      setMessage(`Đã hủy giảm giá cho ${item.productName} - ${item.variantName}.`);
+      await loadCurrentPromotions();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Không thể hủy giảm giá cho sản phẩm.");
+    } finally {
+      setCancellingPromotionId(null);
     }
   };
 
-  // Filter items
-  const filteredItems = items.filter((item) => {
-    const matchesSearch =
-      item.productName.toLowerCase().includes(search.toLowerCase()) ||
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.sku.toLowerCase().includes(search.toLowerCase());
-
-    const isDiscounted = item.compareAtPrice !== null && item.compareAtPrice > item.sellingPrice;
-
-    if (activeTab === "active") {
-      return matchesSearch && isDiscounted;
-    }
-    if (activeTab === "inactive") {
-      return matchesSearch && !isDiscounted;
-    }
-    return matchesSearch;
-  });
-
-  return (
-    <div className="promotions-page">
-      <header className="promotions-page__header">
-        <div>
-          <h1 className="promotions-page__title">Thiết lập & Quản lý Giảm giá</h1>
-          <p className="promotions-page__subtitle">
-            Cấu hình giá bán khuyến mãi và giá gốc (Compare-at price) cho từng biến thể rau củ quả.
-          </p>
-        </div>
-        <span className="promotions-page__role">Store Manager</span>
-      </header>
-
-      {success && <div className="promotions-page__alert promotions-page__alert--success" role="status">{success}</div>}
-      {error && <div className="promotions-page__alert promotions-page__alert--danger" role="alert">{error}</div>}
-
-      <div className="promotions-page__controls card">
-        <div className="promotions-page__search-wrapper">
-          <input
-            type="text"
-            className="promotions-page__search-input"
-            placeholder="Tìm theo tên sản phẩm, biến thể, SKU..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="promotions-page__tabs">
-          <button
-            type="button"
-            className={`promotions-page__tab-btn ${activeTab === "all" ? "promotions-page__tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("all")}
-          >
-            Tất cả ({items.length})
-          </button>
-          <button
-            type="button"
-            className={`promotions-page__tab-btn ${activeTab === "active" ? "promotions-page__tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("active")}
-          >
-            Đang giảm giá ({items.filter(i => i.compareAtPrice !== null && i.compareAtPrice > i.sellingPrice).length})
-          </button>
-          <button
-            type="button"
-            className={`promotions-page__tab-btn ${activeTab === "inactive" ? "promotions-page__tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("inactive")}
-          >
-            Chưa giảm giá ({items.filter(i => i.compareAtPrice === null || i.compareAtPrice <= i.sellingPrice).length})
-          </button>
-        </div>
+  return <section className="promotions-page app-container">
+    <header className="promotions-page__header">
+      <div>
+        <h1 className="promotions-page__title">Chương trình giảm giá</h1>
+        <p className="promotions-page__subtitle">Thiết lập một khung giờ, sau đó chọn sản phẩm và giá giảm.</p>
       </div>
+    </header>
+    {error && <div className="alert alert--danger promotions-page__alert">{error}</div>}
+    {message && <div className="alert alert--success promotions-page__alert">{message}</div>}
 
-      {loading ? (
-        <div className="loading-container">
-          <div className="loading-spinner-circle"></div>
-          <span>Đang tải thông tin sản phẩm và chương trình giảm giá...</span>
+    <section className="card promotions-page__current-section" aria-labelledby="current-promotions-heading">
+      <div className="promotions-page__section-heading">
+        <div>
+          <h2 id="current-promotions-heading">Chương trình giảm giá hiện tại</h2>
+          <p>Các sản phẩm đang trong thời gian được áp dụng giảm giá.</p>
         </div>
+        <span className="promotions-page__count">{currentPromotions.length} sản phẩm</span>
+      </div>
+      {loadingCurrentPromotions ? (
+        <p className="empty-state">Đang tải chương trình hiện tại…</p>
+      ) : currentPromotions.length === 0 ? (
+        <p className="empty-state">Chưa có chương trình giảm giá nào đang áp dụng.</p>
       ) : (
-        <div className="promotions-page__table-card">
-          <table className="promotions-table">
-            <thead>
-              <tr>
-                <th>Sản phẩm / Biến thể</th>
-                <th>SKU</th>
-                <th>Giá bán KM</th>
-                <th>Giá gốc (Compare-at)</th>
-                <th>Thời gian áp dụng</th>
-                <th>Trạng thái giảm giá</th>
-                <th style={{ textAlign: "right" }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "var(--space-xl)", color: "var(--color-text-muted)" }}>
-                    Không tìm thấy sản phẩm nào phù hợp với bộ lọc.
-                  </td>
-                </tr>
-              ) : (
-                filteredItems.map((item) => {
-                  const isEditing = editingId === item.productVariantId;
-                  const isDiscounted = item.compareAtPrice !== null && item.compareAtPrice > item.sellingPrice;
-                  const discountPercent = isDiscounted && item.compareAtPrice
-                    ? Math.round(((item.compareAtPrice - item.sellingPrice) / item.compareAtPrice) * 100)
-                    : 0;
-
-                  return (
-                    <tr key={item.productVariantId}>
-                      <td>
-                        <div className="product-name-bold">{item.productName}</div>
-                        <div className="variant-sku-muted">{item.name}</div>
-                      </td>
-                      <td>
-                        <code>{item.sku}</code>
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <div className="inline-edit-fields">
-                            <label className="form__field" style={{ margin: 0 }}>
-                              <span className="edit-field-label">Giá KM</span>
-                              <input
-                                type="number"
-                                className="inline-edit-input"
-                                value={editPrice}
-                                onChange={(e) => setEditPrice(e.target.value)}
-                                placeholder="Giá km"
-                              />
-                            </label>
-                          </div>
-                        ) : (
-                          <span className="price-current">{currencyFormatter.format(item.sellingPrice)}</span>
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <div className="inline-edit-fields">
-                            <label className="form__field" style={{ margin: 0 }}>
-                              <span className="edit-field-label">Giá gốc</span>
-                              <input
-                                type="number"
-                                className="inline-edit-input"
-                                value={editComparePrice}
-                                onChange={(e) => setEditComparePrice(e.target.value)}
-                                placeholder="Giá gốc"
-                              />
-                            </label>
-                          </div>
-                        ) : item.compareAtPrice ? (
-                          <div className="price-compare">{currencyFormatter.format(item.compareAtPrice)}</div>
-                        ) : (
-                          <span className="normal-price-tag">-</span>
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <div className="inline-edit-dates">
-                            <label className="form__field" style={{ margin: 0 }}>
-                              <span className="edit-field-label">Từ ngày</span>
-                              <input
-                                type="datetime-local"
-                                className="inline-edit-date-input"
-                                value={editStartDate}
-                                onChange={(e) => setEditStartDate(e.target.value)}
-                              />
-                            </label>
-                            <label className="form__field" style={{ margin: 0, marginTop: "4px" }}>
-                              <span className="edit-field-label">Đến ngày</span>
-                              <input
-                                type="datetime-local"
-                                className="inline-edit-date-input"
-                                value={editEndDate}
-                                onChange={(e) => setEditEndDate(e.target.value)}
-                              />
-                            </label>
-                          </div>
-                        ) : (
-                          <div className="promotion-dates-display">
-                            <div><span className="date-label">Bắt đầu:</span> {formatDateTime(item.promotionStartAtUtc)}</div>
-                            <div><span className="date-label">Kết thúc:</span> {formatDateTime(item.promotionEndAtUtc)}</div>
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {isDiscounted ? (
-                          <span className="discount-badge">Giảm {discountPercent}%</span>
-                        ) : (
-                          <span className="normal-price-tag" style={{ fontSize: "0.8rem" }}>Giá thường</span>
-                        )}
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-xs)" }}>
-                          {isEditing ? (
-                            <>
-                              <button
-                                type="button"
-                                className="btn-inline-save"
-                                onClick={() => void handleUpdateDiscount(item)}
-                              >
-                                Lưu
-                              </button>
-                              <button
-                                type="button"
-                                className="btn-inline-cancel"
-                                onClick={cancelEdit}
-                              >
-                                Hủy
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn--secondary btn--sm"
-                                onClick={() => startEdit(item)}
-                              >
-                                Sửa giá
-                              </button>
-                              {isDiscounted && (
-                                <button
-                                  type="button"
-                                  className="btn btn--danger btn--sm"
-                                  onClick={() => void handleRemoveDiscount(item)}
-                                >
-                                  Hủy giảm giá
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        <div className="promotions-page__current-list">
+          {currentPromotions.map((item) => (
+            <article className="promotions-page__current-item" key={item.productVariantId}>
+              <div>
+                <h3>{item.productName}</h3>
+                <p>{item.variantName} · SKU: {item.sku}</p>
+                <p className="promotions-page__current-time">{dateTimeFormatter.format(new Date(item.promotionStartAtUtc))} – {dateTimeFormatter.format(new Date(item.promotionEndAtUtc))}</p>
+              </div>
+              <div className="promotions-page__current-price">
+                <del>{item.originalPrice.toLocaleString("vi-VN")} đ</del>
+                <strong>{item.sellingPrice.toLocaleString("vi-VN")} đ</strong>
+                <button
+                  type="button"
+                  className="btn btn--danger btn--sm promotions-page__cancel-button"
+                  disabled={cancellingPromotionId === item.productVariantId}
+                  onClick={() => void cancelPromotion(item)}
+                >
+                  {cancellingPromotionId === item.productVariantId ? "Đang hủy…" : "Hủy giảm giá"}
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       )}
-    </div>
-  );
+    </section>
+
+    {!scheduleConfirmed ? (
+      <section className="card promotions-page__new-section">
+        <h2>Tạo chương trình giảm giá mới</h2>
+        <p className="promotions-page__section-description">Chọn thời gian, sản phẩm và giá giảm cho đợt tiếp theo.</p>
+        <h3>1. Chọn thời gian giảm giá</h3>
+        <div className="promotions-page__schedule-form">
+          <label className="form__label">
+            Từ ngày
+            <input type="datetime-local" className="form__input" value={startAt} onChange={(event) => setStartAt(event.target.value)} />
+          </label>
+          <label className="form__label">
+            Đến ngày
+            <input type="datetime-local" className="form__input" value={endAt} onChange={(event) => setEndAt(event.target.value)} />
+          </label>
+        </div>
+        <button className="btn btn--primary" onClick={confirmSchedule}>Xác nhận thời gian</button>
+      </section>
+    ) : (
+      <>
+        <section className="card">
+          <div className="promotions-page__schedule-info">
+            <div className="schedule-details">
+              <h3>Thời gian áp dụng:</h3>
+              <p>Từ <strong>{new Date(startAt).toLocaleString("vi-VN")}</strong> đến <strong>{new Date(endAt).toLocaleString("vi-VN")}</strong></p>
+            </div>
+            <button className="btn btn--outline btn--sm" onClick={() => setScheduleConfirmed(false)}>Thay đổi</button>
+          </div>
+        </section>
+
+        <section className="card">
+          <h2>2. Tìm sản phẩm để giảm giá</h2>
+          <input className="form__input" placeholder="Tên sản phẩm, SKU…" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="promotions-page__candidate-list">
+            {visibleCandidates.map((item) => (
+              <button key={item.productVariantId} className="promotions-page__candidate" onClick={() => setDraft((current) => [...current, item])}>
+                <div className="candidate-info">
+                  <span className="candidate-name">{item.productName} · {item.variantName}</span>
+                  <span className="candidate-sku">SKU: {item.sku}</span>
+                </div>
+                <span className="candidate-price">{item.sellingPrice.toLocaleString("vi-VN")} đ</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="card promotions-page__draft-section">
+          <h2>3. Danh sách giảm giá tạm thời</h2>
+          {draft.length === 0 ? (
+            <p className="empty-state">Chưa chọn sản phẩm.</p>
+          ) : (
+            <div className="promotions-page__draft-table-wrapper">
+              <table className="promotions-page__draft-table">
+                <thead>
+                  <tr>
+                    <th>Sản phẩm</th>
+                    <th>Giá ban đầu</th>
+                    <th>Giá đã giảm</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {draft.map((item) => (
+                    <tr key={item.productVariantId}>
+                      <td>
+                        <div className="draft-product-name">{item.productName}</div>
+                        <div className="draft-variant-name">{item.variantName} (SKU: {item.sku})</div>
+                      </td>
+                      <td className="draft-original-price">{item.sellingPrice.toLocaleString("vi-VN")} đ</td>
+                      <td>
+                        <div className="draft-price-input-wrapper">
+                          <input 
+                            type="number" 
+                            className="form__input draft-price-input"
+                            value={item.salePrice} 
+                            onChange={(event) => setDraft((current) => current.map((entry) => entry.productVariantId === item.productVariantId ? { ...entry, salePrice: event.target.value } : entry))} 
+                          />
+                          <span className="currency-suffix">đ</span>
+                        </div>
+                      </td>
+                      <td className="draft-actions">
+                        <button className="btn btn--danger btn--sm btn--icon" onClick={() => setDraft((current) => current.filter((entry) => entry.productVariantId !== item.productVariantId))} title="Bỏ">
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="promotions-page__actions">
+            <button type="button" className="btn btn--primary" disabled={saving || draft.length === 0} onClick={() => void applyPromotion()}>{saving ? "Đang xác nhận…" : "Xác nhận giảm giá"}</button>
+          </div>
+        </section>
+      </>
+    )}
+  </section>;
 }

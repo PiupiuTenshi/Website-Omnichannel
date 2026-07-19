@@ -25,6 +25,7 @@ export function UserManagementPage() {
   // Modal / Action states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+  const [newPhoneNumber, setNewPhoneNumber] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("Seller");
   const [createLoading, setCreateLoading] = useState(false);
@@ -70,18 +71,24 @@ export function UserManagementPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accessToken) return;
+    if (!newEmail.trim() && !newPhoneNumber.trim()) {
+      setError("Nhập ít nhất email hoặc số điện thoại.");
+      return;
+    }
     try {
       setCreateLoading(true);
       setError("");
       setSuccess("");
       await createUser(accessToken, {
         email: newEmail,
+        phoneNumber: newPhoneNumber,
         password: newPassword,
         role: newRole,
       });
-      setSuccess(`Đã tạo tài khoản ${newEmail} thành công.`);
+      setSuccess(`Đã tạo tài khoản ${newEmail || newPhoneNumber}; tài khoản sẽ kích hoạt khi người dùng đăng nhập đúng lần đầu.`);
       setShowCreateModal(false);
       setNewEmail("");
+      setNewPhoneNumber("");
       setNewPassword("");
       setNewRole("Seller");
       void loadUsers();
@@ -233,7 +240,7 @@ export function UserManagementPage() {
                       </td>
                       <td>
                         <span className={`status-badge ${user.isActive ? "status-badge--active" : "status-badge--locked"}`}>
-                          {user.isActive ? "Hoạt động" : "Bị khóa"}
+                          {user.isActive ? "Hoạt động" : user.requiresInitialActivation ? "Chờ kích hoạt" : "Bị khóa"}
                         </span>
                       </td>
                       <td>
@@ -281,7 +288,6 @@ export function UserManagementPage() {
                 <span className="form__label">Địa chỉ Email</span>
                 <input
                   type="email"
-                  required
                   className="form__input"
                   placeholder="nhanvien@choxanh.com"
                   value={newEmail}
@@ -290,13 +296,26 @@ export function UserManagementPage() {
               </label>
 
               <label className="form__field">
+                <span className="form__label">Số điện thoại</span>
+                <input
+                  type="tel"
+                  className="form__input"
+                  placeholder="0901234567"
+                  value={newPhoneNumber}
+                  onChange={(e) => setNewPhoneNumber(e.target.value)}
+                />
+              </label>
+
+              <p className="form__hint">Nhập ít nhất email hoặc số điện thoại. Không gửi OTP; tài khoản kích hoạt sau lần đăng nhập đúng đầu tiên.</p>
+
+              <label className="form__field">
                 <span className="form__label">Mật khẩu ban đầu</span>
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="form__input"
-                  placeholder="Nhập tối thiểu 6 ký tự..."
+                  placeholder="Nhập tối thiểu 8 ký tự..."
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
