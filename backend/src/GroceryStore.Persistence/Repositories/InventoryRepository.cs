@@ -87,35 +87,17 @@ public sealed class InventoryRepository : IInventoryRepository
 
     public async Task<IReadOnlyList<LowStockInventoryItem>> GetLowStockItemsAsync(decimal minimumAvailableQuantity, CancellationToken cancellationToken)
     {
-        var availableQuantities = applicationDbContext.InventoryBatches
+        var availableQuantities = await applicationDbContext.InventoryBatches
             .AsNoTracking()
             .GroupBy(batch => batch.ProductVariantId)
-            .Select(group => new { ProductVariantId = group.Key, AvailableQuantity = group.Sum(batch => batch.AvailableQuantity) });
+            .Select(group => new { ProductVariantId = group.Key, AvailableQuantity = group.Sum(batch => batch.AvailableQuantity) })
+            .ToDictionaryAsync(item => item.ProductVariantId, item => item.AvailableQuantity, cancellationToken);
 
-        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-
-        var posSales = from item in applicationDbContext.OrderItems.AsNoTracking()
-                       join order in applicationDbContext.Orders.AsNoTracking() on item.OrderId equals order.OrderId
-                       where order.Status == OrderStatus.Completed && order.CreatedAtUtc >= thirtyDaysAgo
-                       group item by item.ProductVariantId into g
-                       select new { ProductVariantId = g.Key, Revenue = g.Sum(i => i.LineTotal) };
-
-        var onlineSales = from item in applicationDbContext.OnlineOrderItems.AsNoTracking()
-                          join order in applicationDbContext.OnlineOrders.AsNoTracking() on item.OnlineOrderId equals order.OnlineOrderId
-                          where order.Status == OnlineOrderStatus.Delivered && order.CreatedAtUtc >= thirtyDaysAgo
-                          group item by item.ProductVariantId into g
-                          select new { ProductVariantId = g.Key, Revenue = g.Sum(i => i.LineTotal) };
-
-        var posSalesDict = await posSales.ToDictionaryAsync(x => x.ProductVariantId, x => x.Revenue, cancellationToken);
-        var onlineSalesDict = await onlineSales.ToDictionaryAsync(x => x.ProductVariantId, x => x.Revenue, cancellationToken);
-
-        var items = await (
+        var variants = await (
             from variant in applicationDbContext.ProductVariants.AsNoTracking()
             join product in applicationDbContext.Products.AsNoTracking() on variant.ProductId equals product.ProductId
             join unit in applicationDbContext.UnitsOfMeasure.AsNoTracking() on product.UnitOfMeasureId equals unit.UnitOfMeasureId
-            join quantity in availableQuantities on variant.ProductVariantId equals quantity.ProductVariantId into quantities
-            from quantity in quantities.DefaultIfEmpty()
-            where variant.IsActive && product.IsActive && (quantity == null || quantity.AvailableQuantity <= minimumAvailableQuantity)
+            where variant.IsActive && product.IsActive
             orderby product.Name, variant.Name
             select new
             {
@@ -124,10 +106,23 @@ public sealed class InventoryRepository : IInventoryRepository
                 ProductName = product.Name,
                 VariantName = variant.Name,
                 variant.Sku,
-                UnitCode = unit.Code,
-                AvailableQuantity = quantity == null ? 0m : quantity.AvailableQuantity
+                UnitCode = unit.Code
             })
             .ToListAsync(cancellationToken);
+
+        var items = variants
+            .Select(item => new
+            {
+                item.ProductVariantId,
+                item.ProductId,
+                item.ProductName,
+                item.VariantName,
+                item.Sku,
+                item.UnitCode,
+                AvailableQuantity = availableQuantities.GetValueOrDefault(item.ProductVariantId)
+            })
+            .Where(item => item.AvailableQuantity <= minimumAvailableQuantity)
+            .ToArray();
 
         var productIds = items.Select(i => i.ProductId).Distinct().ToList();
         var variantIds = items.Select(i => i.ProductVariantId).Distinct().ToList();
@@ -160,9 +155,6 @@ public sealed class InventoryRepository : IInventoryRepository
 
         return items.Select(item =>
         {
-            posSalesDict.TryGetValue(item.ProductVariantId, out var posRev);
-            onlineSalesDict.TryGetValue(item.ProductVariantId, out var onlineRev);
-
             Guid? resolvedSupplierId = null;
             string? resolvedSupplierName = null;
 
@@ -184,7 +176,7 @@ public sealed class InventoryRepository : IInventoryRepository
                 item.Sku,
                 item.UnitCode,
                 item.AvailableQuantity,
-                posRev + onlineRev,
+                0m,
                 resolvedSupplierId,
                 resolvedSupplierName);
         }).ToArray();
@@ -283,9 +275,9 @@ public sealed class InventoryRepository : IInventoryRepository
         else
         {
             var newLink = new ProductSupplier(
-                variant.ProductId, 
-                supplierId, 
-                "PROD-" + variant.ProductId.ToString().Substring(0, 8).ToUpper(), 
+                variant.ProductId,
+                supplierId,
+                "PROD-" + variant.ProductId.ToString().Substring(0, 8).ToUpper(),
                 true
             );
             await applicationDbContext.ProductSuppliers.AddAsync(newLink, cancellationToken);

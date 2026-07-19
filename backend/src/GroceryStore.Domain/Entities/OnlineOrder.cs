@@ -67,14 +67,14 @@ public sealed class OnlineOrder
 
     public void SetShippingQuote(decimal shippingFee, string message, DateTime utcNow)
     {
-        if (Status != OnlineOrderStatus.AwaitingShippingQuote || shippingFee < 0 || string.IsNullOrWhiteSpace(message))
+        if (Status != OnlineOrderStatus.AwaitingShippingQuote || shippingFee < 0)
         {
             throw new InvalidOperationException("A shipping quote can only be set for an order awaiting a quote.");
         }
 
         ShippingFee = shippingFee;
         Total = Subtotal + shippingFee;
-        ManagerMessage = message.Trim();
+        ManagerMessage = string.IsNullOrWhiteSpace(message) ? null : message.Trim();
         UpdatedAtUtc = utcNow;
     }
 
@@ -124,12 +124,23 @@ public sealed class OnlineOrder
 
     public void MarkDelivering(DateTime utcNow)
     {
-        if (Status is not (OnlineOrderStatus.Pending or OnlineOrderStatus.QuoteAccepted or OnlineOrderStatus.Confirmed or OnlineOrderStatus.Preparing))
+        if (Status != OnlineOrderStatus.Preparing)
         {
             throw new InvalidOperationException("Order cannot be sent for delivery in its current state.");
         }
 
         Status = OnlineOrderStatus.Delivering;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkPreparing(DateTime utcNow)
+    {
+        if (Status is not (OnlineOrderStatus.Pending or OnlineOrderStatus.QuoteAccepted or OnlineOrderStatus.Confirmed))
+        {
+            throw new InvalidOperationException("Order cannot be prepared in its current state.");
+        }
+
+        Status = OnlineOrderStatus.Preparing;
         UpdatedAtUtc = utcNow;
     }
 

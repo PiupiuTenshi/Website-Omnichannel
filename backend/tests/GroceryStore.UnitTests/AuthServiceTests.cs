@@ -33,9 +33,12 @@ public sealed class AuthServiceTests
             "BUYER@EXAMPLE.COM",
             null,
             null,
+            null,
+            null,
             false,
             false,
-            true);
+            true,
+            false);
 
         public Task<IdentityOperationResult> CreateBuyerAsync(RegisterUserCommand command, string? normalizedEmail, string? normalizedPhoneNumber, CancellationToken cancellationToken)
         {
@@ -52,9 +55,38 @@ public sealed class AuthServiceTests
             throw new NotSupportedException();
         }
 
+        public Task<IdentityOperationResult> UpdateProfileAsync(string userId, string? displayName, string? defaultDeliveryAddress, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IdentityOperationResult> SaveContactChangeRequestAsync(string userId, ContactChangeChannel channel, string newValue, string normalizedNewValue, string code, DateTime expiresAtUtc, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<ContactChangeConfirmationResult> ConfirmContactChangeAsync(string userId, ContactChangeChannel channel, string code, DateTime utcNow, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
         public Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
+        }
+
+        public Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<string?> GeneratePasswordResetTokenAsync(string userId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<IdentityOperationResult> ResetPasswordAsync(string userId, string token, string newPassword, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<IdentityOperationResult> ActivateOnFirstSignInAsync(string userId, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
         }
 
         public Task<IReadOnlyCollection<string>> GetRolesAsync(string userId, CancellationToken cancellationToken)
@@ -63,6 +95,11 @@ public sealed class AuthServiceTests
         }
 
         public Task<string?> GenerateEmailConfirmationTokenAsync(string userId, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IdentityOperationResult> SaveEmailVerificationCodeAsync(string userId, string code, DateTime expiresAtUtc, CancellationToken cancellationToken)
         {
             throw new NotSupportedException();
         }
@@ -97,7 +134,7 @@ public sealed class AuthServiceTests
             throw new NotSupportedException();
         }
 
-        public Task<IdentityOperationResult> CreateUserWithRoleAsync(string email, string password, string role, CancellationToken cancellationToken)
+        public Task<IdentityOperationResult> CreateUserWithRoleAsync(string? email, string? phoneNumber, string password, string role, CancellationToken cancellationToken)
         {
             throw new NotSupportedException();
         }

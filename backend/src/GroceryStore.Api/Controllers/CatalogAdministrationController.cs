@@ -195,7 +195,9 @@ public sealed class CatalogAdministrationController : ControllerBase
                 request.Barcode,
                 request.SellingPrice,
                 request.CompareAtPrice,
-                request.IsActive),
+                request.IsActive,
+                request.PromotionStartAtUtc,
+                request.PromotionEndAtUtc),
             cancellationToken));
     }
 

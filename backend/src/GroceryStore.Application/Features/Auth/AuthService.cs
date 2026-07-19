@@ -58,13 +58,17 @@ public sealed class AuthService
 
         if (account.Email is not null)
         {
-            var token = await identityAccountService.GenerateEmailConfirmationTokenAsync(account.UserId, cancellationToken)
-                ?? throw new InvalidOperationException("The email confirmation token could not be generated.");
+            var code = GenerateOtpCode();
+            var result = await identityAccountService.SaveEmailVerificationCodeAsync(account.UserId, code, DateTime.UtcNow.Add(OTP_EXPIRY), cancellationToken);
+            if (!result.Succeeded)
+            {
+                throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+            }
 
             await emailSender.SendAsync(
                 account.Email,
                 "Verify your Tạp hóa chị Tỏ account",
-                $"Your email verification token is: {token}",
+                $"Your email verification code is: {code}",
                 cancellationToken);
         }
 
@@ -108,7 +112,14 @@ public sealed class AuthService
 
         if (!account.IsActive)
         {
-            throw new BusinessRuleViolationException("The account is locked.");
+            var activationResult = await identityAccountService.ActivateOnFirstSignInAsync(account.UserId, cancellationToken);
+            if (!activationResult.Succeeded)
+            {
+                throw new BusinessRuleViolationException("The account is locked.");
+            }
+
+            account = await identityAccountService.FindByIdAsync(account.UserId, cancellationToken)
+                ?? throw new UnauthorizedAccessException("The account no longer exists.");
         }
 
         if (!AccountVerificationPolicy.IsVerified(account.EmailConfirmed, account.PhoneNumberConfirmed))
@@ -191,9 +202,166 @@ public sealed class AuthService
         return identityAccountService.GetAllUsersAsync(cancellationToken);
     }
 
-    public async Task CreateUserWithRoleAsync(string email, string password, string role, CancellationToken cancellationToken)
+    public async Task<AccountProfileResponse> GetProfileAsync(string userId, CancellationToken cancellationToken)
     {
-        var result = await identityAccountService.CreateUserWithRoleAsync(email, password, role, cancellationToken);
+        var account = await identityAccountService.FindByIdAsync(userId, cancellationToken)
+            ?? throw new KeyNotFoundException("The account was not found.");
+        var roles = await identityAccountService.GetRolesAsync(userId, cancellationToken);
+        return ToProfileResponse(account, roles);
+    }
+
+    public async Task<AccountProfileResponse> UpdateProfileAsync(
+        string userId,
+        UpdateAccountProfileCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await identityAccountService.UpdateProfileAsync(
+            userId,
+            command.DisplayName,
+            command.DefaultDeliveryAddress,
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+
+        return await GetProfileAsync(userId, cancellationToken);
+    }
+
+    public async Task ChangePasswordAsync(string userId, ChangePasswordCommand command, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.CurrentPassword))
+        {
+            throw new BusinessRuleViolationException("Current password is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.NewPassword) || command.NewPassword.Length < 8)
+        {
+            throw new BusinessRuleViolationException("New password must contain at least eight characters.");
+        }
+
+        if (string.Equals(command.CurrentPassword, command.NewPassword, StringComparison.Ordinal))
+        {
+            throw new BusinessRuleViolationException("New password must be different from the current password.");
+        }
+
+        var result = await identityAccountService.ChangePasswordAsync(
+            userId,
+            command.CurrentPassword,
+            command.NewPassword,
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+    }
+
+    public async Task RequestPasswordResetAsync(RequestPasswordResetCommand command, CancellationToken cancellationToken)
+    {
+        EmailAddress.TryNormalize(command.Identifier, out var normalizedEmail);
+        PhoneNumber.TryNormalize(command.Identifier, out var normalizedPhoneNumber);
+        var account = await identityAccountService.FindByLoginAsync(normalizedEmail, normalizedPhoneNumber, cancellationToken);
+        if (account is null || string.IsNullOrWhiteSpace(command.ResetUrl) || !Uri.TryCreate(command.ResetUrl, UriKind.Absolute, out var resetUri))
+        {
+            return;
+        }
+
+        var token = await identityAccountService.GeneratePasswordResetTokenAsync(account.UserId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(token)) return;
+        var separator = resetUri.Query.Length == 0 ? "?" : "&";
+        var link = $"{resetUri}{separator}userId={Uri.EscapeDataString(account.UserId)}&token={Uri.EscapeDataString(token)}";
+        if (account.EmailConfirmed && !string.IsNullOrWhiteSpace(account.Email))
+        {
+            await emailSender.SendAsync(account.Email, "Reset your password", $"Open this one-time link to reset your password: {link}", cancellationToken);
+        }
+        else if (account.PhoneNumberConfirmed && !string.IsNullOrWhiteSpace(account.PhoneNumber))
+        {
+            await smsOtpSender.SendAsync(account.PhoneNumber, link, cancellationToken);
+        }
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordCommand command, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.NewPassword) || command.NewPassword.Length < 8)
+            throw new BusinessRuleViolationException("New password must contain at least eight characters.");
+        var result = await identityAccountService.ResetPasswordAsync(command.UserId, command.Token, command.NewPassword, cancellationToken);
+        if (!result.Succeeded) throw new BusinessRuleViolationException("The password reset link is invalid or has expired.");
+    }
+
+    public async Task<ContactChangeRequestResponse> RequestContactChangeAsync(string userId, RequestContactChangeCommand command, CancellationToken cancellationToken)
+    {
+        var account = await identityAccountService.FindByIdAsync(userId, cancellationToken)
+            ?? throw new KeyNotFoundException("The account was not found.");
+        var newValue = command.NewValue?.Trim() ?? string.Empty;
+        var normalizedNewValue = NormalizeContactChangeValue(command.Channel, newValue);
+        var currentValue = command.Channel == ContactChangeChannel.Email ? account.Email : account.PhoneNumber;
+        if (string.Equals(currentValue, newValue, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BusinessRuleViolationException("The new contact value must be different from the current value.");
+        }
+
+        var code = GenerateOtpCode();
+        var result = await identityAccountService.SaveContactChangeRequestAsync(
+            userId,
+            command.Channel,
+            newValue,
+            normalizedNewValue,
+            code,
+            DateTime.UtcNow.Add(OTP_EXPIRY),
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+
+        if (command.Channel == ContactChangeChannel.Email && account.EmailConfirmed && !string.IsNullOrWhiteSpace(account.Email))
+        {
+            await emailSender.SendAsync(account.Email, "Confirm contact change", $"Your confirmation code is: {code}", cancellationToken);
+            return new ContactChangeRequestResponse(ContactChangeChannel.Email);
+        }
+
+        if (command.Channel == ContactChangeChannel.Phone && account.PhoneNumberConfirmed && !string.IsNullOrWhiteSpace(account.PhoneNumber))
+        {
+            await smsOtpSender.SendAsync(account.PhoneNumber, code, cancellationToken);
+            return new ContactChangeRequestResponse(ContactChangeChannel.Phone);
+        }
+
+        if (account.EmailConfirmed && !string.IsNullOrWhiteSpace(account.Email))
+        {
+            await emailSender.SendAsync(account.Email, "Confirm contact change", $"Your confirmation code is: {code}", cancellationToken);
+            return new ContactChangeRequestResponse(ContactChangeChannel.Email);
+        }
+
+        if (account.PhoneNumberConfirmed && !string.IsNullOrWhiteSpace(account.PhoneNumber))
+        {
+            await smsOtpSender.SendAsync(account.PhoneNumber, code, cancellationToken);
+            return new ContactChangeRequestResponse(ContactChangeChannel.Phone);
+        }
+
+        throw new BusinessRuleViolationException("A verified current email address or phone number is required to change contact details.");
+    }
+
+    public async Task<AccountProfileResponse> ConfirmContactChangeAsync(string userId, ConfirmContactChangeCommand command, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.Code))
+        {
+            throw new BusinessRuleViolationException("A confirmation code is required.");
+        }
+
+        var result = await identityAccountService.ConfirmContactChangeAsync(userId, command.Channel, command.Code.Trim(), DateTime.UtcNow, cancellationToken);
+        if (!result.Succeeded || result.NewValue is null)
+        {
+            throw new BusinessRuleViolationException(string.Join(" ", result.Errors));
+        }
+
+        return await GetProfileAsync(userId, cancellationToken);
+    }
+
+    public async Task CreateUserWithRoleAsync(string? email, string? phoneNumber, string password, string role, CancellationToken cancellationToken)
+    {
+        RegistrationValidator.Validate(new RegisterUserCommand(email, phoneNumber, password));
+
+        var result = await identityAccountService.CreateUserWithRoleAsync(email, phoneNumber, password, role, cancellationToken);
 
         if (!result.Succeeded)
         {
@@ -242,5 +410,33 @@ public sealed class AuthService
     private static string HashToken(string token)
     {
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
+
+    private static AccountProfileResponse ToProfileResponse(IdentityAccount account, IReadOnlyCollection<string> roles) => new(
+        account.UserId,
+        account.Email,
+        account.PhoneNumber,
+        account.DisplayName,
+        account.DefaultDeliveryAddress,
+        roles);
+
+    private static string NormalizeContactChangeValue(ContactChangeChannel channel, string value)
+    {
+        if (channel == ContactChangeChannel.Email)
+        {
+            if (!EmailAddress.TryNormalize(value, out var normalizedEmail) || string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                throw new BusinessRuleViolationException("A valid email address is required.");
+            }
+
+            return normalizedEmail;
+        }
+
+        if (!PhoneNumber.TryNormalize(value, out var normalizedPhoneNumber) || string.IsNullOrWhiteSpace(normalizedPhoneNumber))
+        {
+            throw new BusinessRuleViolationException("A valid phone number is required.");
+        }
+
+        return normalizedPhoneNumber;
     }
 }

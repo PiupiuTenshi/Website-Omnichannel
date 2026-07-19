@@ -79,7 +79,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(user => user.NormalizedPhoneNumber).HasMaxLength(15);
+            entity.Property(user => user.DisplayName).HasMaxLength(120);
+            entity.Property(user => user.DefaultDeliveryAddress).HasMaxLength(300);
             entity.Property(user => user.IsActive).HasDefaultValue(true);
+            entity.Property(user => user.RequiresInitialActivation).HasDefaultValue(false);
             entity.HasIndex(user => user.NormalizedEmail)
                 .IsUnique()
                 .HasFilter("[NormalizedEmail] IS NOT NULL");

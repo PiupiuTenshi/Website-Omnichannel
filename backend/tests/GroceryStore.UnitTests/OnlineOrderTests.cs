@@ -33,6 +33,18 @@ public sealed class OnlineOrderTests
         Assert.Throws<InvalidOperationException>(() => order.Cancel(DateTime.UtcNow));
     }
 
+    [Fact]
+    public void Manager_CanProgressOrderFromProcessingToDelivery()
+    {
+        var order = CreateOrder(OnlineOrderStatus.Pending, 10000m);
+
+        order.MarkPreparing(DateTime.UtcNow);
+        order.MarkDelivering(DateTime.UtcNow);
+        order.MarkDelivered(DateTime.UtcNow);
+
+        Assert.Equal(OnlineOrderStatus.Delivered, order.Status);
+    }
+
     private static OnlineOrder CreateOrder(OnlineOrderStatus status, decimal? shippingFee) => new(
         "WEB-TEST", "guest-session", null, "Buyer", "0900000000", "Da Lat", 100000m, shippingFee, 2m,
         OnlinePaymentMethod.Cod, status, DateTime.UtcNow);

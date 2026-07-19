@@ -8,4 +8,6 @@ public sealed record ProductListItemResponse(
     string UnitName,
     decimal SellingPrice,
     decimal? CompareAtPrice,
-    string? PrimaryImageUrl);
+    string? PrimaryImageUrl,
+    DateTime? PromotionStartAtUtc = null,
+    DateTime? PromotionEndAtUtc = null);

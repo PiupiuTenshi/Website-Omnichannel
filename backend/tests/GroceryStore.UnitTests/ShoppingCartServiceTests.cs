@@ -113,6 +113,8 @@ public sealed class ShoppingCartServiceTests
             return Task.CompletedTask;
         }
 
+        public Task AddItemAsync(ShoppingCartItem item, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

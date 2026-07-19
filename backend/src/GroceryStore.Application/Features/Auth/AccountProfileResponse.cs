@@ -1,11 +1,9 @@
 namespace GroceryStore.Application.Features.Auth;
 
-public sealed record UserAccountSummary(
+public sealed record AccountProfileResponse(
     string UserId,
     string? Email,
     string? PhoneNumber,
-    bool EmailConfirmed,
-    bool PhoneNumberConfirmed,
-    bool IsActive,
-    bool RequiresInitialActivation,
+    string? DisplayName,
+    string? DefaultDeliveryAddress,
     IReadOnlyCollection<string> Roles);

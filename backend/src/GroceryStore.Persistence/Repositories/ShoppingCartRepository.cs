@@ -19,7 +19,6 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
 
     public Task<CartProduct?> GetActiveProductAsync(Guid productVariantId, CancellationToken cancellationToken)
     {
-        var now = DateTime.UtcNow;
         return (
             from variant in context.ProductVariants.AsNoTracking()
             join product in context.Products.AsNoTracking() on variant.ProductId equals product.ProductId
@@ -28,11 +27,7 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
             select new CartProduct(
                 product.Name,
                 variant.Name,
-                (variant.CompareAtPrice != null && variant.CompareAtPrice > variant.SellingPrice &&
-                 (variant.PromotionStartAtUtc == null || now >= variant.PromotionStartAtUtc) &&
-                 (variant.PromotionEndAtUtc == null || now <= variant.PromotionEndAtUtc))
-                    ? variant.SellingPrice
-                    : (variant.CompareAtPrice ?? variant.SellingPrice),
+                variant.SellingPrice,
                 unit.Code == "KG")
         ).SingleOrDefaultAsync(cancellationToken);
     }
@@ -45,7 +40,6 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
             return [];
         }
 
-        var now = DateTime.UtcNow;
         var products = await (
             from variant in context.ProductVariants.AsNoTracking()
             join product in context.Products.AsNoTracking() on variant.ProductId equals product.ProductId
@@ -56,11 +50,7 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
                 variant.ProductVariantId,
                 ProductName = product.Name,
                 VariantName = variant.Name,
-                UnitPrice = (variant.CompareAtPrice != null && variant.CompareAtPrice > variant.SellingPrice &&
-                             (variant.PromotionStartAtUtc == null || now >= variant.PromotionStartAtUtc) &&
-                             (variant.PromotionEndAtUtc == null || now <= variant.PromotionEndAtUtc))
-                                ? variant.SellingPrice
-                                : (variant.CompareAtPrice ?? variant.SellingPrice),
+                UnitPrice = variant.SellingPrice,
                 unit.Code
             }
         ).ToListAsync(cancellationToken);
@@ -78,6 +68,8 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
     }
 
     public Task AddAsync(ShoppingCart cart, CancellationToken cancellationToken) => context.ShoppingCarts.AddAsync(cart, cancellationToken).AsTask();
+
+    public Task AddItemAsync(ShoppingCartItem item, CancellationToken cancellationToken) => context.ShoppingCartItems.AddAsync(item, cancellationToken).AsTask();
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {

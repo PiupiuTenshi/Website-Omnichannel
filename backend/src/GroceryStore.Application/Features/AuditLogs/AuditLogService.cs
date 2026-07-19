@@ -19,7 +19,7 @@ public sealed record AuditLogEntry(
 
 public sealed class AuditLogService
 {
-    private static readonly SemaphoreSlim Semaphore = new(1, 1);
+    private static readonly SemaphoreSlim SEMAPHORE = new(1, 1);
     private readonly string filePath;
 
     public AuditLogService()
@@ -29,30 +29,30 @@ public sealed class AuditLogService
 
     public async Task<IReadOnlyCollection<AuditLogEntry>> GetLogsAsync(CancellationToken cancellationToken)
     {
-        await Semaphore.WaitAsync(cancellationToken);
+        await SEMAPHORE.WaitAsync(cancellationToken);
         try
         {
             if (!File.Exists(filePath))
             {
-                return GetDefaultLogs();
+                return Array.Empty<AuditLogEntry>();
             }
 
             var json = await File.ReadAllTextAsync(filePath, cancellationToken);
-            return JsonSerializer.Deserialize<List<AuditLogEntry>>(json) ?? GetDefaultLogs();
+            return JsonSerializer.Deserialize<List<AuditLogEntry>>(json) ?? new List<AuditLogEntry>();
         }
         catch
         {
-            return GetDefaultLogs();
+            return Array.Empty<AuditLogEntry>();
         }
         finally
         {
-            Semaphore.Release();
+            SEMAPHORE.Release();
         }
     }
 
     public async Task LogAsync(string user, string role, string action, string module, string ip, string status, CancellationToken cancellationToken)
     {
-        await Semaphore.WaitAsync(cancellationToken);
+        await SEMAPHORE.WaitAsync(cancellationToken);
         try
         {
             var logs = new List<AuditLogEntry>();
@@ -67,11 +67,6 @@ public sealed class AuditLogService
                 {
                     logs = new List<AuditLogEntry>();
                 }
-            }
-
-            if (logs.Count == 0)
-            {
-                logs.AddRange(GetDefaultLogs());
             }
 
             var nextId = logs.Count > 0 ? logs[0].Id + 1 : 1;
@@ -108,7 +103,7 @@ public sealed class AuditLogService
         }
         finally
         {
-            Semaphore.Release();
+            SEMAPHORE.Release();
         }
     }
 

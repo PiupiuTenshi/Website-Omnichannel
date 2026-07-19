@@ -4,6 +4,7 @@ using GroceryStore.Application.Abstractions.Authentication;
 using GroceryStore.Application.Features.Auth;
 using GroceryStore.Domain.Enums;
 using GroceryStore.Domain.Rules;
+using GroceryStore.Domain.ValueObjects;
 using GroceryStore.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,9 @@ public sealed class IdentityAccountService : IIdentityAccountService
 {
     private const string PHONE_OTP_LOGIN_PROVIDER = "PhoneOtp";
     private const string PHONE_OTP_TOKEN_NAME = "VerificationCode";
+    private const string EMAIL_OTP_LOGIN_PROVIDER = "EmailOtp";
+    private const string EMAIL_OTP_TOKEN_NAME = "VerificationCode";
+    private const string CONTACT_CHANGE_LOGIN_PROVIDER = "ContactChange";
 
     private readonly UserManager<ApplicationUser> userManager;
     private readonly ApplicationDbContext applicationDbContext;
@@ -83,10 +87,147 @@ public sealed class IdentityAccountService : IIdentityAccountService
         return user is null ? null : ToAccount(user);
     }
 
+    public async Task<IdentityOperationResult> UpdateProfileAsync(
+        string userId,
+        string? displayName,
+        string? defaultDeliveryAddress,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        user.DisplayName = NormalizeOptionalValue(displayName, 120, "Display name");
+        user.DefaultDeliveryAddress = NormalizeOptionalValue(defaultDeliveryAddress, 300, "Delivery address");
+        return ToOperationResult(await userManager.UpdateAsync(user));
+    }
+
+    public async Task<IdentityOperationResult> SaveContactChangeRequestAsync(
+        string userId,
+        ContactChangeChannel channel,
+        string newValue,
+        string normalizedNewValue,
+        string code,
+        DateTime expiresAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        var currentContactIsVerified = channel == ContactChangeChannel.Email
+            ? !string.IsNullOrWhiteSpace(user.Email) && user.EmailConfirmed
+            : !string.IsNullOrWhiteSpace(user.PhoneNumber) && user.PhoneNumberConfirmed;
+        if (!currentContactIsVerified)
+        {
+            return Failure("The current contact method must be verified before it can be changed.");
+        }
+
+        if (await ContactAlreadyExistsAsync(channel, normalizedNewValue, userId, cancellationToken))
+        {
+            return Failure("Another account already uses this contact method.");
+        }
+
+        var tokenValue = string.Join(':', expiresAtUtc.Ticks, Convert.ToBase64String(Encoding.UTF8.GetBytes(newValue)), Convert.ToBase64String(Encoding.UTF8.GetBytes(normalizedNewValue)), Hash(code));
+        return ToOperationResult(await userManager.SetAuthenticationTokenAsync(
+            user,
+            CONTACT_CHANGE_LOGIN_PROVIDER,
+            channel.ToString(),
+            tokenValue));
+    }
+
+    public async Task<ContactChangeConfirmationResult> ConfirmContactChangeAsync(
+        string userId,
+        ContactChangeChannel channel,
+        string code,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return ContactChangeConfirmationResult.Failure("The account does not exist.");
+        }
+
+        var tokenValue = await userManager.GetAuthenticationTokenAsync(user, CONTACT_CHANGE_LOGIN_PROVIDER, channel.ToString());
+        if (!TryReadContactChangeToken(tokenValue, out var expiresAtUtc, out var newValue, out var normalizedNewValue, out var codeHash) || expiresAtUtc <= utcNow)
+        {
+            return ContactChangeConfirmationResult.Failure("The confirmation code is invalid or expired.");
+        }
+
+        var actualHash = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+        if (!CryptographicOperations.FixedTimeEquals(codeHash, actualHash))
+        {
+            return ContactChangeConfirmationResult.Failure("The confirmation code is invalid or expired.");
+        }
+
+        if (await ContactAlreadyExistsAsync(channel, normalizedNewValue, userId, cancellationToken))
+        {
+            return ContactChangeConfirmationResult.Failure("Another account already uses this contact method.");
+        }
+
+        if (channel == ContactChangeChannel.Email)
+        {
+            user.Email = newValue;
+            user.UserName = normalizedNewValue;
+            user.NormalizedEmail = normalizedNewValue;
+            user.NormalizedUserName = normalizedNewValue;
+            user.EmailConfirmed = true;
+        }
+        else
+        {
+            user.PhoneNumber = newValue;
+            user.NormalizedPhoneNumber = normalizedNewValue;
+            user.PhoneNumberConfirmed = true;
+        }
+
+        var updateResult = await userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            return new ContactChangeConfirmationResult(false, null, updateResult.Errors.Select(error => error.Description).ToArray());
+        }
+
+        await userManager.RemoveAuthenticationTokenAsync(user, CONTACT_CHANGE_LOGIN_PROVIDER, channel.ToString());
+        return new ContactChangeConfirmationResult(true, newValue, Array.Empty<string>());
+    }
+
     public async Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(userId);
         return user is not null && await userManager.CheckPasswordAsync(user, password);
+    }
+
+    public async Task<IdentityOperationResult> ChangePasswordAsync(
+        string userId,
+        string currentPassword,
+        string newPassword,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        return ToOperationResult(await userManager.ChangePasswordAsync(user, currentPassword, newPassword));
+    }
+
+    public async Task<string?> GeneratePasswordResetTokenAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        return user is null ? null : await userManager.GeneratePasswordResetTokenAsync(user);
+    }
+
+    public async Task<IdentityOperationResult> ResetPasswordAsync(string userId, string token, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        return user is null
+            ? Failure("The password reset request is invalid.")
+            : ToOperationResult(await userManager.ResetPasswordAsync(user, token, newPassword));
     }
 
     public async Task<IReadOnlyCollection<string>> GetRolesAsync(string userId, CancellationToken cancellationToken)
@@ -106,9 +247,43 @@ public sealed class IdentityAccountService : IIdentityAccountService
     public async Task<IdentityOperationResult> ConfirmEmailAsync(ConfirmEmailCommand command, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(command.UserId);
-        return user is null
-            ? Failure("The account does not exist.")
-            : ToOperationResult(await userManager.ConfirmEmailAsync(user, command.Token));
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        var otpTokenValue = await userManager.GetAuthenticationTokenAsync(user, EMAIL_OTP_LOGIN_PROVIDER, EMAIL_OTP_TOKEN_NAME);
+        if (TryReadPhoneVerificationToken(otpTokenValue, out var expiresAtUtc, out var codeHash))
+        {
+            var actualHash = SHA256.HashData(Encoding.UTF8.GetBytes(command.Token));
+            if (expiresAtUtc <= DateTime.UtcNow || !CryptographicOperations.FixedTimeEquals(Convert.FromHexString(codeHash), actualHash))
+            {
+                return Failure("The email verification code is invalid or expired.");
+            }
+
+            user.EmailConfirmed = true;
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return ToOperationResult(updateResult);
+            }
+
+            await userManager.RemoveAuthenticationTokenAsync(user, EMAIL_OTP_LOGIN_PROVIDER, EMAIL_OTP_TOKEN_NAME);
+            return IdentityOperationResult.SUCCESS;
+        }
+
+        return ToOperationResult(await userManager.ConfirmEmailAsync(user, command.Token));
+    }
+
+    public async Task<IdentityOperationResult> SaveEmailVerificationCodeAsync(string userId, string code, DateTime expiresAtUtc, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        return ToOperationResult(await userManager.SetAuthenticationTokenAsync(user, EMAIL_OTP_LOGIN_PROVIDER, EMAIL_OTP_TOKEN_NAME, $"{expiresAtUtc.Ticks}:{Hash(code)}"));
     }
 
     public async Task<IdentityOperationResult> SavePhoneVerificationCodeAsync(
@@ -181,6 +356,30 @@ public sealed class IdentityAccountService : IIdentityAccountService
         }
 
         user.IsActive = isActive;
+        user.RequiresInitialActivation = false;
+        return ToOperationResult(await userManager.UpdateAsync(user));
+    }
+
+    public async Task<IdentityOperationResult> ActivateOnFirstSignInAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return Failure("The account does not exist.");
+        }
+
+        if (user.IsActive)
+        {
+            return IdentityOperationResult.SUCCESS;
+        }
+
+        if (!user.RequiresInitialActivation)
+        {
+            return Failure("The account is locked.");
+        }
+
+        user.IsActive = true;
+        user.RequiresInitialActivation = false;
         return ToOperationResult(await userManager.UpdateAsync(user));
     }
 
@@ -220,6 +419,7 @@ public sealed class IdentityAccountService : IIdentityAccountService
                 user.EmailConfirmed,
                 user.PhoneNumberConfirmed,
                 user.IsActive,
+                user.RequiresInitialActivation,
                 roles.ToArray()));
         }
 
@@ -227,7 +427,8 @@ public sealed class IdentityAccountService : IIdentityAccountService
     }
 
     public async Task<IdentityOperationResult> CreateUserWithRoleAsync(
-        string email,
+        string? email,
+        string? phoneNumber,
         string password,
         string role,
         CancellationToken cancellationToken)
@@ -237,19 +438,28 @@ public sealed class IdentityAccountService : IIdentityAccountService
             return Failure($"'{role}' is not a valid role.");
         }
 
-        var trimmedEmail = email.Trim();
-        var existing = await userManager.FindByEmailAsync(trimmedEmail);
-        if (existing is not null)
+        EmailAddress.TryNormalize(email, out var normalizedEmail);
+        PhoneNumber.TryNormalize(phoneNumber, out var normalizedPhoneNumber);
+        if (normalizedEmail is null && normalizedPhoneNumber is null)
         {
-            return Failure("An account with this email already exists.");
+            return Failure("An email address or phone number is required.");
+        }
+
+        if (await ContactAlreadyExistsAsync(normalizedEmail, normalizedPhoneNumber, cancellationToken))
+        {
+            return Failure("An account already uses this email address or phone number.");
         }
 
         var user = new ApplicationUser
         {
-            UserName = trimmedEmail,
-            Email = trimmedEmail,
-            EmailConfirmed = true,
-            IsActive = true
+            UserName = normalizedEmail ?? normalizedPhoneNumber,
+            Email = email?.Trim(),
+            PhoneNumber = phoneNumber?.Trim(),
+            NormalizedPhoneNumber = normalizedPhoneNumber,
+            EmailConfirmed = normalizedEmail is not null,
+            PhoneNumberConfirmed = normalizedPhoneNumber is not null,
+            IsActive = false,
+            RequiresInitialActivation = true
         };
 
         var createResult = await userManager.CreateAsync(user, password);
@@ -337,6 +547,11 @@ public sealed class IdentityAccountService : IIdentityAccountService
             cancellationToken);
     }
 
+    private Task<bool> ContactAlreadyExistsAsync(ContactChangeChannel channel, string normalizedValue, string userId, CancellationToken cancellationToken) =>
+        channel == ContactChangeChannel.Email
+            ? applicationDbContext.Users.AnyAsync(user => user.Id != userId && user.NormalizedEmail == normalizedValue, cancellationToken)
+            : applicationDbContext.Users.AnyAsync(user => user.Id != userId && user.NormalizedPhoneNumber == normalizedValue, cancellationToken);
+
     private static IdentityAccount ToAccount(ApplicationUser user)
     {
         return new IdentityAccount(
@@ -345,9 +560,12 @@ public sealed class IdentityAccountService : IIdentityAccountService
             user.NormalizedEmail,
             user.PhoneNumber,
             user.NormalizedPhoneNumber,
+            user.DisplayName,
+            user.DefaultDeliveryAddress,
             user.EmailConfirmed,
             user.PhoneNumberConfirmed,
-            user.IsActive);
+            user.IsActive,
+            user.RequiresInitialActivation);
     }
 
     private static IdentityOperationResult ToOperationResult(IdentityResult result)
@@ -365,6 +583,22 @@ public sealed class IdentityAccountService : IIdentityAccountService
     private static string Hash(string value)
     {
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    }
+
+    private static string? NormalizeOptionalValue(string? value, int maxLength, string fieldName)
+    {
+        var trimmedValue = value?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedValue))
+        {
+            return null;
+        }
+
+        if (trimmedValue.Length > maxLength)
+        {
+            throw new ArgumentException($"{fieldName} cannot exceed {maxLength} characters.");
+        }
+
+        return trimmedValue;
     }
 
     private static bool TryReadPhoneVerificationToken(string? tokenValue, out DateTime expiresAtUtc, out string codeHash)
@@ -385,6 +619,32 @@ public sealed class IdentityAccountService : IIdentityAccountService
             return Convert.FromHexString(codeHash).Length == 32;
         }
         catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryReadContactChangeToken(string? tokenValue, out DateTime expiresAtUtc, out string newValue, out string normalizedNewValue, out byte[] codeHash)
+    {
+        expiresAtUtc = default;
+        newValue = string.Empty;
+        normalizedNewValue = string.Empty;
+        codeHash = Array.Empty<byte>();
+        var parts = tokenValue?.Split(':', 4);
+        if (parts is not { Length: 4 } || !long.TryParse(parts[0], out var ticks))
+        {
+            return false;
+        }
+
+        try
+        {
+            expiresAtUtc = new DateTime(ticks, DateTimeKind.Utc);
+            newValue = Encoding.UTF8.GetString(Convert.FromBase64String(parts[1]));
+            normalizedNewValue = Encoding.UTF8.GetString(Convert.FromBase64String(parts[2]));
+            codeHash = Convert.FromHexString(parts[3]);
+            return codeHash.Length == 32;
+        }
+        catch (FormatException)
         {
             return false;
         }

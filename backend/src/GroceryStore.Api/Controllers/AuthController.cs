@@ -66,4 +66,20 @@ public sealed class AuthController : ControllerBase
         await authService.ConfirmPhoneAsync(new ConfirmPhoneCommand(request.UserId, request.Code), cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("password-resets")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<IActionResult> RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken)
+    {
+        await authService.RequestPasswordResetAsync(new RequestPasswordResetCommand(request.Identifier, request.ResetUrl), cancellationToken);
+        return Accepted();
+    }
+
+    [HttpPost("password-resets/confirm")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await authService.ResetPasswordAsync(new ResetPasswordCommand(request.UserId, request.Token, request.NewPassword), cancellationToken);
+        return NoContent();
+    }
 }

@@ -151,6 +151,15 @@ public sealed class OnlineOrderService(
         return ToResponse(order);
     }
 
+    public async Task<OnlineOrderResponse> MarkPreparingAsync(Guid onlineOrderId, CancellationToken cancellationToken)
+    {
+        var order = await onlineOrderRepository.GetForManagementAsync(onlineOrderId, cancellationToken)
+            ?? throw new KeyNotFoundException("Online order was not found.");
+        order.MarkPreparing(DateTime.UtcNow);
+        await onlineOrderRepository.SaveChangesAsync(cancellationToken);
+        return ToResponse(order);
+    }
+
     public async Task<OnlineOrderResponse> MarkDeliveredAsync(Guid onlineOrderId, CancellationToken cancellationToken)
     {
         var order = await onlineOrderRepository.GetForManagementAsync(onlineOrderId, cancellationToken)
@@ -172,6 +181,12 @@ public sealed class OnlineOrderService(
     public async Task<IReadOnlyList<OnlineOrderResponse>> GetOrdersForManagementAsync(CancellationToken cancellationToken)
     {
         var orders = await onlineOrderRepository.GetOrdersForManagementAsync(cancellationToken);
+        return orders.Select(ToResponse).ToArray();
+    }
+
+    public async Task<IReadOnlyList<OnlineOrderResponse>> GetOrdersForBuyerAsync(string buyerUserId, CancellationToken cancellationToken)
+    {
+        var orders = await onlineOrderRepository.GetOrdersForBuyerAsync(buyerUserId, cancellationToken);
         return orders.Select(ToResponse).ToArray();
     }
 

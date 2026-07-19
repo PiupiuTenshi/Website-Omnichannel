@@ -55,11 +55,11 @@ public sealed class ProductVariant
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     public void Update(
-        string name, 
-        string sku, 
-        string? barcode, 
-        decimal sellingPrice, 
-        decimal? compareAtPrice, 
+        string name,
+        string sku,
+        string? barcode,
+        decimal sellingPrice,
+        decimal? compareAtPrice,
         bool isActive,
         DateTime? promotionStartAtUtc = null,
         DateTime? promotionEndAtUtc = null)

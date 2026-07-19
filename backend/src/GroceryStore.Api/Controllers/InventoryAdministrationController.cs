@@ -52,10 +52,12 @@ public sealed class InventoryAdministrationController : ControllerBase
     }
 
     [HttpGet("batches")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<IReadOnlyList<InventoryBatchResponse>>> GetBatchesAsync([FromQuery] Guid? productVariantId, CancellationToken cancellationToken) =>
         Ok(await inventoryService.GetBatchesAsync(productVariantId, cancellationToken));
 
     [HttpGet("low-stock")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<IReadOnlyList<LowStockItemResponse>>> GetLowStockAsync(
         [FromQuery] decimal minimumAvailableQuantity = 5m,
         CancellationToken cancellationToken = default) =>

@@ -41,12 +41,12 @@ public sealed class UserAdministrationController : ControllerBase
         CreateUserRequest request,
         CancellationToken cancellationToken)
     {
-        await authService.CreateUserWithRoleAsync(request.Email, request.Password, request.Role, cancellationToken);
+        await authService.CreateUserWithRoleAsync(request.Email, request.PhoneNumber, request.Password, request.Role, cancellationToken);
 
         var user = User.FindFirst(ClaimTypes.Email)?.Value ?? User.Identity?.Name ?? "unknown";
         var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "Admin";
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        await auditLogService.LogAsync(user, role, $"Tạo tài khoản mới: {request.Email} (Vai trò: {request.Role})", "Hệ thống", ip, "Success", cancellationToken);
+        await auditLogService.LogAsync(user, role, $"Tạo tài khoản mới: {request.Email ?? request.PhoneNumber} (Vai trò: {request.Role})", "Hệ thống", ip, "Success", cancellationToken);
 
         return StatusCode(StatusCodes.Status201Created);
     }

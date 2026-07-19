@@ -4,6 +4,7 @@ using GroceryStore.Persistence.Authentication;
 using GroceryStore.Persistence.Context;
 using GroceryStore.Persistence.Repositories;
 using GroceryStore.Persistence.Seeding;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,13 +18,13 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = BuildConnectionString(configuration.GetConnectionString("DefaultConnection"));
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             if (!string.IsNullOrWhiteSpace(connectionString))
             {
-                options.UseSqlServer(connectionString);
+                options.UseSqlServer(connectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure());
             }
         });
 
@@ -55,5 +56,22 @@ public static class DependencyInjection
         services.AddScoped<DemoIdentitySeeder>();
 
         return services;
+    }
+
+    private static string? BuildConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return connectionString;
+        }
+
+        var builder = new SqlConnectionStringBuilder(connectionString);
+        if (builder.DataSource.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) ||
+            builder.DataSource.StartsWith("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.TrustServerCertificate = true;
+        }
+
+        return builder.ConnectionString;
     }
 }

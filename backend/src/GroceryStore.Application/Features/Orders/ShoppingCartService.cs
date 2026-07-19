@@ -61,7 +61,11 @@ public sealed class ShoppingCartService(IShoppingCartRepository shoppingCartRepo
             }
         }
 
-        cart.SetItemQuantity(command.ProductVariantId, command.Quantity, utcNow);
+        var addedItem = cart.SetItemQuantity(command.ProductVariantId, command.Quantity, utcNow);
+        if (addedItem is not null && cart.ShoppingCartId != Guid.Empty)
+        {
+            await shoppingCartRepository.AddItemAsync(addedItem, cancellationToken);
+        }
         await shoppingCartRepository.SaveChangesAsync(cancellationToken);
         return await ToResponseAsync(cart, cancellationToken);
     }
@@ -104,7 +108,11 @@ public sealed class ShoppingCartService(IShoppingCartRepository shoppingCartRepo
 
         if (guestCart is not null)
         {
-            userCart.MergeFrom(guestCart, utcNow);
+            var addedItems = userCart.MergeFrom(guestCart, utcNow);
+            foreach (var addedItem in addedItems)
+            {
+                await shoppingCartRepository.AddItemAsync(addedItem, cancellationToken);
+            }
         }
 
         await shoppingCartRepository.SaveChangesAsync(cancellationToken);

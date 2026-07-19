@@ -40,6 +40,13 @@ public sealed class OnlineOrderRepository(ApplicationDbContext context) : IOnlin
             .OrderByDescending(order => order.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<OnlineOrder>> GetOrdersForBuyerAsync(string buyerUserId, CancellationToken cancellationToken) =>
+        await context.OnlineOrders
+            .AsNoTracking()
+            .Where(order => order.BuyerUserId == buyerUserId)
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
     public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken)
     {
         var strategy = context.Database.CreateExecutionStrategy();
