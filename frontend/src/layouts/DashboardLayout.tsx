@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth";
 import { getPublicStoreSettings } from "../features/admin/api/storeSettingsApi";
 import type { StoreSettings } from "../features/admin/types/storeSettingsTypes";
@@ -8,6 +8,7 @@ import "./DashboardLayout.css";
 export function DashboardLayout() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
@@ -19,6 +20,10 @@ export function DashboardLayout() {
 
   if (session === null) {
     return null;
+  }
+
+  if (location.pathname === "/manager/pos") {
+    return <Outlet />;
   }
 
   const roles = session.roles;
@@ -228,6 +233,17 @@ export function DashboardLayout() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 <span>Dashboard Seller</span>
+              </NavLink>
+              <NavLink
+                to="/seller/price-tags"
+                className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                  <path d="M8 9h8M8 13h8M8 17h4" />
+                </svg>
+                <span>In tag giá</span>
               </NavLink>
               <NavLink
                 to="/manager/pos"

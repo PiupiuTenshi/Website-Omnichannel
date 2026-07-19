@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth";
+import { useCart } from "../features/cart";
 import { getPublicStoreSettings } from "../features/admin/api/storeSettingsApi";
 import type { StoreSettings } from "../features/admin/types/storeSettingsTypes";
 
 export function PublicLayout() {
   const { session, logout } = useAuth();
+  const { itemCount } = useCart();
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
   useEffect(() => {
@@ -45,7 +47,8 @@ export function PublicLayout() {
           
           <nav className="public-layout__navigation" aria-label="Account navigation">
             <Link className="nav-link" to="/">Sản phẩm</Link>
-            <Link className="nav-link" to="/cart">Giỏ hàng</Link>
+            <Link className="nav-link" to="/cart">Giỏ hàng ({itemCount})</Link>
+            {session !== null && <Link className="nav-link" to="/account">Tài khoản</Link>}
             {dashboardPath && (
               <Link className="nav-link" to={dashboardPath}>Quản trị</Link>
             )}

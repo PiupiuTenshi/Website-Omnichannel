@@ -28,6 +28,7 @@ jobs:
       - name: Build
         run: dotnet build backend/GroceryStore.sln --configuration Release --no-restore
       - name: Format
-        run: dotnet format backend/GroceryStore.sln --verify-no-changes --no-restore
+        # EF-generated migrations preserve their generated formatting and are validated by build/tests.
+        run: dotnet format backend/GroceryStore.sln --verify-no-changes --no-restore --exclude backend/src/GroceryStore.Persistence/Migrations
       - name: Test
         run: dotnet test backend/GroceryStore.sln --configuration Release --no-build

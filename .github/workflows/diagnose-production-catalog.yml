@@ -21,5 +21,5 @@ jobs:
       - name: Run read-only catalog diagnostics
         uses: azure/sql-action@v2.3
         with:
-          connection-string: ${{ secrets.MONSTERASP_SQL_CONNECTION_STRING }}
+          connection-string: ${{ secrets.PRODUCTION_SQL_CONNECTION_STRING }}
           path: database/diagnostics/verify-catalog.sql

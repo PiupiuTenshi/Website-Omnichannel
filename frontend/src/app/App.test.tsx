@@ -20,6 +20,6 @@ describe("App", () => {
 
     expect(screen.getByRole("link", { name: "🥬 Chợ Xanh" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nông sản sạch & Nhu yếu phẩm tươi ngon mỗi ngày" })).toBeInTheDocument();
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(4));
   });
 });

@@ -87,6 +87,12 @@ button:not(.nav-link):not(.brand-icon) {
   margin-bottom: 20px;
 }
 
+.print-purchase-order__qr { margin-top: 8px; text-align: center; font-size: 10px; font-weight: 700; }
+.print-purchase-order__qr img { display: block; margin-left: auto; border: 1px solid #000; }
+
+/* The generated proposal code/date are not part of the supplier invoice; keep only its QR at the top right. */
+.print-purchase-order__header > div:last-child > p { display: none; }
+
 .print-purchase-order__store-info h3 {
   margin: 0 0 5px 0;
   font-size: 16px;

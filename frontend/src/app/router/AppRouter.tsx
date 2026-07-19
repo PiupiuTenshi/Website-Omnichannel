@@ -1,12 +1,13 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { StoreSettingsPage, AdminDashboardPage, ManagerDashboardPage, SellerDashboardPage, AuditLogsPage, ReportsPage, UserManagementPage, AdminOrdersPage, PromotionsPage } from "../../features/admin";
 import { LoginPage, RegisterPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
+import { AccountPage } from "../../features/account";
 import { CatalogPage, ProductDetailPage, ProductFormPage, AdminProductsPage } from "../../features/catalog";
 import { CartPage } from "../../features/cart";
 import { CheckoutPage } from "../../features/checkout";
 import { OrderTrackingPage } from "../../features/orders";
 import { InventoryBatchesPage, InventoryReceivePage, LowStockPage, SuppliersPage } from "../../features/inventory";
-import { PosPage } from "../../features/pos";
+import { PosPage, PriceTagPage } from "../../features/pos";
 import { PublicLayout } from "../../layouts/PublicLayout";
 import { DashboardLayout } from "../../layouts/DashboardLayout";
 import { FoundationPage } from "../../pages/FoundationPage";
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "verify", element: <VerifyAccountPage /> },
+      {
+        element: <RoleRouteGuard />,
+        children: [{ path: "account", element: <AccountPage /> }]
+      },
       { path: "*", element: <NotFoundPage /> }
     ]
   },
@@ -48,7 +53,8 @@ const router = createBrowserRouter([
       {
         element: <RoleRouteGuard allowedRoles={["Seller"]} />,
         children: [
-          { path: "seller/dashboard", element: <SellerDashboardPage /> }
+          { path: "seller/dashboard", element: <SellerDashboardPage /> },
+          { path: "seller/price-tags", element: <PriceTagPage /> }
         ]
       },
       {

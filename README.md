@@ -73,11 +73,11 @@ Cloudflare Pages (Frontend React SPA)
         |
         | HTTPS / JSON
         v
-MonsterASP.NET (ASP.NET Core Web API)
+Render (ASP.NET Core Web API)
         |-- SQL Server Database (Local / Production)
         |-- SMTP (Email verification) & SMS OTP Abstraction
         |-- Goong REST API (Geocoding & Directions)
-        `-- Cloudflare R2 / Local Storage (Product Images)
+        `-- Local Storage (Product Images)
 ```
 
 ### Stack Details
@@ -179,7 +179,7 @@ Cloudflare Pages (Frontend React SPA)
         |
         | HTTPS / JSON
         v
-MonsterASP.NET (ASP.NET Core Web API)
+Render (ASP.NET Core Web API)
         |-- SQL Server Database (Local / Production)
         |-- SMTP (Gửi mail xác thực) & SMS OTP Mock
         |-- Goong REST API (Tìm đường và khoảng cách ship)
