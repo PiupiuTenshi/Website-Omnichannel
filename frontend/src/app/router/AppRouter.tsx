@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { StoreSettingsPage, AdminDashboardPage, ManagerDashboardPage, SellerDashboardPage, AuditLogsPage, ReportsPage, UserManagementPage, AdminOrdersPage, PromotionsPage } from "../../features/admin";
-import { LoginPage, RegisterPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
+import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
 import { AccountPage } from "../../features/account";
 import { CatalogPage, ProductDetailPage, ProductFormPage, AdminProductsPage } from "../../features/catalog";
 import { CartPage } from "../../features/cart";
@@ -24,7 +24,9 @@ const router = createBrowserRouter([
       { path: "checkout", element: <CheckoutPage /> },
       { path: "orders/:orderId", element: <OrderTrackingPage /> },
       { path: "login", element: <LoginPage /> },
+      { path: "forgot-password", element: <ForgotPasswordPage /> },
       { path: "register", element: <RegisterPage /> },
+      { path: "reset-password", element: <ResetPasswordPage /> },
       { path: "verify", element: <VerifyAccountPage /> },
       {
         element: <RoleRouteGuard />,

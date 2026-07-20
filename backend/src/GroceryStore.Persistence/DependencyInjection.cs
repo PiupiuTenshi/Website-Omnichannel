@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IReportingRepository, ReportingRepository>();
         services.Configure<DemoIdentityOptions>(configuration.GetSection(DemoIdentityOptions.SECTION_NAME));
         services.AddScoped<DemoIdentitySeeder>();
+        services.AddScoped<DemoCatalogSeeder>();
 
         return services;
     }

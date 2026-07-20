@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth";
-import { changePassword, confirmContactChange, getAccountProfile, getMyOrders, requestContactChange, updateAccountProfile } from "../api/accountApi";
+import { confirmContactChange, getAccountProfile, getMyOrders, requestContactChange, updateAccountProfile } from "../api/accountApi";
+import { requestPasswordReset } from "../../auth/api/authApi";
 import type { AccountProfile } from "../types/accountTypes";
 import type { OnlineOrder } from "../../checkout/api/onlineOrdersApi";
 import "./AccountPage.css";
@@ -25,9 +26,6 @@ export function AccountPage() {
   const [contactChangeCode, setContactChangeCode] = useState("");
   const [isChangingContact, setIsChangingContact] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
@@ -111,28 +109,22 @@ export function AccountPage() {
     }
   }
 
-  async function submitPasswordChange(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitPasswordReset() {
+    if (!profile) return;
+    const identifier = profile.email || profile.phoneNumber;
+    if (!identifier) {
+      setError("Bạn cần có email hoặc số điện thoại đã xác minh để đặt lại mật khẩu.");
+      return;
+    }
     setError("");
     setMessage("");
-    if (newPassword.length < 8) {
-      setError("Mật khẩu mới phải có ít nhất 8 ký tự.");
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setError("Xác nhận mật khẩu mới chưa khớp.");
-      return;
-    }
-
     try {
       setIsChangingPassword(true);
-      await changePassword(accessToken, currentPassword, newPassword);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-      setMessage("Đã đổi mật khẩu thành công.");
+      const resetUrl = `${window.location.origin}/reset-password`;
+      await requestPasswordReset(identifier, resetUrl);
+      setMessage(`Đã gửi yêu cầu đặt lại mật khẩu đến ${identifier}.`);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Không thể đổi mật khẩu.");
+      setError(requestError instanceof Error ? requestError.message : "Không thể gửi yêu cầu đặt lại mật khẩu.");
     } finally {
       setIsChangingPassword(false);
     }
@@ -241,13 +233,18 @@ export function AccountPage() {
         </section>
 
         <section className="account-page__card" aria-labelledby="password-heading">
-          <h2 id="password-heading">Đổi mật khẩu</h2>
-          <form className="account-page__form" onSubmit={submitPasswordChange}>
-            <label><span>Mật khẩu hiện tại</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></label>
-            <label><span>Mật khẩu mới</span><input type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label>
-            <label><span>Xác nhận mật khẩu mới</span><input type="password" autoComplete="new-password" minLength={8} value={confirmNewPassword} onChange={(event) => setConfirmNewPassword(event.target.value)} required /></label>
-            <button type="submit" className="btn-primary" disabled={isChangingPassword}>{isChangingPassword ? "Đang đổi…" : "Đổi mật khẩu"}</button>
-          </form>
+          <h2 id="password-heading">Quản lý mật khẩu</h2>
+          <p className="account-page__hint">Nếu bạn quên mật khẩu hoặc nghi ngờ tài khoản bị lộ, hãy yêu cầu đặt lại mật khẩu. Một liên kết hoặc mã khôi phục sẽ được gửi đến email đã xác minh của bạn.</p>
+          <div style={{ marginTop: "var(--space-md)" }}>
+            <button
+              type="button"
+              className="btn-outline"
+              disabled={isChangingPassword}
+              onClick={() => void submitPasswordReset()}
+            >
+              {isChangingPassword ? "Đang gửi yêu cầu…" : "Yêu cầu đặt lại mật khẩu"}
+            </button>
+          </div>
         </section>
       </div>
     </main>

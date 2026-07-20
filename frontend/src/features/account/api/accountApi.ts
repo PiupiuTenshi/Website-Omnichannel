@@ -22,13 +22,6 @@ export function updateAccountProfile(accessToken: string, payload: UpdateAccount
   });
 }
 
-export function changePassword(accessToken: string, currentPassword: string, newPassword: string): Promise<void> {
-  return requestJson<void>("/account/change-password", {
-    method: "POST",
-    headers: authorization(accessToken),
-    body: JSON.stringify({ currentPassword, newPassword })
-  });
-}
 
 export function getMyOrders(accessToken: string): Promise<OnlineOrder[]> {
   return requestJson<OnlineOrder[]>("/account/orders", { headers: authorization(accessToken) });

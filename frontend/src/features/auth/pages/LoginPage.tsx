@@ -53,6 +53,7 @@ export function LoginPage() {
             <span>Mật khẩu</span>
             <input className="auth-form__input" id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
           </label>
+          <Link className="auth-card__forgot-link" to="/forgot-password">Quên mật khẩu?</Link>
           {errorMessage && <p className="auth-form__message" role="alert">{errorMessage}</p>}
           <button className="auth-form__submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}</button>
         </form>

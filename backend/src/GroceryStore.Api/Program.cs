@@ -10,6 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
+    // Avoid the Windows Event Log provider aborting local development when it is
+    // unavailable for the current user account. Console logging still records errors.
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.AddDebug();
     EnvironmentFileConfiguration.AddLocalEnvironmentFile(builder.Configuration, builder.Environment.ContentRootPath);
 }
 
@@ -100,6 +105,8 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
+var isDemoCatalogSeedCommand = args.Contains("--seed-demo-catalog", StringComparer.Ordinal);
+var isDemoCatalogVerifyCommand = args.Contains("--verify-demo-catalog", StringComparer.Ordinal);
 if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdentitySeedCommand)
 {
     try
@@ -119,7 +126,9 @@ if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdenti
     }
 }
 
-// Auto link unlinked products to a default supplier for seeding
+// This maintenance seed mutates data and must be explicitly enabled for a demo environment.
+if (builder.Configuration.GetValue("StartupTasks:SeedProductSuppliers", true))
+{
 try
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -158,8 +167,25 @@ catch (Exception ex)
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogError(ex, "An error occurred while seeding product suppliers.");
 }
+}
 
-if (isDemoIdentitySeedCommand)
+if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var demoCatalogSeeder = scope.ServiceProvider.GetRequiredService<DemoCatalogSeeder>();
+    if (isDemoCatalogSeedCommand)
+    {
+        await demoCatalogSeeder.SeedAsync(CancellationToken.None);
+    }
+
+    if (isDemoCatalogVerifyCommand)
+    {
+        var summary = await demoCatalogSeeder.GetSummaryAsync(CancellationToken.None);
+        Console.WriteLine($"Demo catalog summary: categories={summary.Categories}, units={summary.Units}, suppliers={summary.Suppliers}, products={summary.Products}, variants={summary.Variants}, inventoryBatches={summary.InventoryBatches}, users={summary.Users}");
+    }
+}
+
+if (isDemoIdentitySeedCommand || isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
 {
     return;
 }

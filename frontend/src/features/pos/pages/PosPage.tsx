@@ -65,17 +65,25 @@ export function PosPage() {
   };
 
   const printReceipt = () => {
-    const wasFullscreen = document.fullscreenElement !== null;
-    if (wasFullscreen) {
-      window.addEventListener("afterprint", () => {
-        if (!document.fullscreenElement) {
-          void document.documentElement.requestFullscreen?.().catch(() => {
-            // The dedicated POS layout remains available if the browser rejects restoring full screen.
-          });
-        }
-      }, { once: true });
+    if (successOrder === null) return;
+
+    const printWindow = window.open("", "pos-receipt-print", "width=460,height=720");
+    if (printWindow === null) {
+      setError("Trình duyệt đã chặn cửa sổ in. Hãy cho phép mở cửa sổ bật lên rồi thử lại.");
+      return;
     }
-    window.print();
+
+    const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
+    const items = successOrder.items.map((item) => `<tr><td>${escapeHtml(item.productName)}<br><small>${escapeHtml(item.variantName)}</small></td><td>${item.quantity.toFixed(item.isWeighed ? 1 : 0)}</td><td>${(item.quantity * item.price).toLocaleString("vi-VN")}</td></tr>`).join("");
+    const paymentLabel = successOrder.paymentMethod === "Cash" ? "Tiền mặt" : "Chuyển khoản";
+    const cashDetails = successOrder.paymentMethod === "Cash"
+      ? `<p>Khách đưa: ${successOrder.cashReceived.toLocaleString("vi-VN")} đ</p><p>Trả lại: ${successOrder.changeAmount.toLocaleString("vi-VN")} đ</p>`
+      : "";
+
+    printWindow.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Hóa đơn ${escapeHtml(successOrder.orderCode)}</title><style>
+      @page { size: 58mm auto; margin: 2mm; } * { box-sizing: border-box; } body { width: 54mm; margin: 0; color: #000; font-family: Arial, sans-serif; font-size: 10px; } h1, h2, p { margin: 0; } header, footer { text-align: center; } h1 { font-size: 13px; } h2 { font-size: 12px; margin-top: 5px; } .divider { border-top: 1px dashed #000; margin: 6px 0; } table { width: 100%; border-collapse: collapse; } th, td { padding: 2px 0; text-align: left; vertical-align: top; } th:nth-child(2), td:nth-child(2) { width: 8mm; text-align: center; } th:last-child, td:last-child { width: 16mm; text-align: right; } small { font-size: 8px; } .total { font-size: 11px; font-weight: 700; } footer { margin-top: 8px; }
+    </style></head><body><header><h1>TẠP HÓA CHỊ TỎ</h1><p>Địa chỉ: 204 Tô Hiến Thành, Đà Lạt</p><p>SĐT: 0898087507</p><div class="divider"></div><h2>HÓA ĐƠN BÁN HÀNG</h2><p>Mã đơn: ${escapeHtml(successOrder.orderCode)}</p><p>Ngày: ${new Date().toLocaleString("vi-VN")}</p></header><div class="divider"></div><table><thead><tr><th>Tên SP</th><th>SL</th><th>T.Tiền</th></tr></thead><tbody>${items}</tbody></table><div class="divider"></div><section><p>Tổng tiền hàng: ${successOrder.exactAmount.toLocaleString("vi-VN")} đ</p><p class="total">Thanh toán (${paymentLabel}): ${successOrder.amountDue.toLocaleString("vi-VN")} đ</p>${cashDetails}</section><div class="divider"></div><footer><p>Cảm ơn quý khách!</p><p>Hẹn gặp lại!</p></footer><script>window.onload = () => { window.focus(); window.print(); };</script></body></html>`);
+    printWindow.document.close();
   };
 
   const addProductToCart = useCallback((prod: PosProduct, weight?: number) => {

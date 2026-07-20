@@ -113,6 +113,14 @@
   font-weight: 700;
 }
 
+.auth-card__forgot-link {
+  justify-self: end;
+  margin-top: calc(var(--space-sm) * -1);
+  color: var(--color-primary-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .auth-verify-grid {
   display: grid;
   gap: var(--space-lg);
