@@ -8,6 +8,22 @@ public sealed record DemoCatalogSummary(int Categories, int Units, int Suppliers
 
 public sealed class DemoCatalogSeeder(ApplicationDbContext context)
 {
+    private static readonly IReadOnlyDictionary<string, string> CATEGORY_IMAGE_COLORS = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["gao-mi"] = "B45309",
+        ["rau-cu"] = "2F855A",
+        ["trai-cay"] = "C05621",
+        ["thit-ca"] = "9B2C2C",
+        ["banh-keo"] = "805AD5",
+        ["sua-trung"] = "2B6CB0",
+        ["cham-soc-nha"] = "0F766E",
+        ["do-uong"] = "1D4ED8",
+        ["an-vat"] = "C2410C",
+        ["gia-vi"] = "A16207",
+        ["dong-lanh"] = "0369A1",
+        ["mi-an-lien"] = "B91C1C",
+        ["nhu-yeu-pham"] = "475569"
+    };
     private sealed record ProductSeed(string Name, string Slug, string CategorySlug, string UnitCode, string Sku, string Barcode, decimal Price, decimal? CompareAtPrice, decimal Cost, decimal Quantity);
 
     private static readonly ProductSeed[] PRODUCTS =
@@ -87,6 +103,24 @@ public sealed class DemoCatalogSeeder(ApplicationDbContext context)
             context.ProductSuppliers.Add(new ProductSupplier(product.ProductId, supplier.SupplierId, seed.Sku, true));
             context.InventoryBatches.Add(new InventoryBatch(variant.ProductVariantId, supplier.SupplierId, seed.Quantity, seed.Cost, DateTime.UtcNow, null, DateTime.UtcNow.AddMonths(9)));
         }
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SeedIllustrationImagesAsync(CancellationToken cancellationToken)
+    {
+        var productsWithoutImages = await context.Products
+            .Include(product => product.Category)
+            .Where(product => !context.ProductImages.Any(image => image.ProductId == product.ProductId))
+            .ToArrayAsync(cancellationToken);
+
+        foreach (var product in productsWithoutImages)
+        {
+            var categorySlug = product.Category?.Slug ?? "nhu-yeu-pham";
+            var color = CATEGORY_IMAGE_COLORS.GetValueOrDefault(categorySlug, "475569");
+            var imageUrl = $"https://placehold.co/1200x900/{color}/FFFFFF/png?text={Uri.EscapeDataString(product.Name)}";
+            context.ProductImages.Add(new ProductImage(product.ProductId, imageUrl, "image/png", 0, 1200, 900, 0, true));
+        }
+
         await context.SaveChangesAsync(cancellationToken);
     }
 

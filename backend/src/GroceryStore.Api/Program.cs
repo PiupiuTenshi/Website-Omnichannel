@@ -107,6 +107,7 @@ app.MapHealthChecks("/health");
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
 var isDemoCatalogSeedCommand = args.Contains("--seed-demo-catalog", StringComparer.Ordinal);
 var isDemoCatalogVerifyCommand = args.Contains("--verify-demo-catalog", StringComparer.Ordinal);
+var isDemoImageSeedCommand = args.Contains("--seed-demo-images", StringComparer.Ordinal);
 if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdentitySeedCommand)
 {
     try
@@ -169,13 +170,18 @@ catch (Exception ex)
 }
 }
 
-if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
+if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand || isDemoImageSeedCommand)
 {
     await using var scope = app.Services.CreateAsyncScope();
     var demoCatalogSeeder = scope.ServiceProvider.GetRequiredService<DemoCatalogSeeder>();
     if (isDemoCatalogSeedCommand)
     {
         await demoCatalogSeeder.SeedAsync(CancellationToken.None);
+    }
+
+    if (isDemoImageSeedCommand)
+    {
+        await demoCatalogSeeder.SeedIllustrationImagesAsync(CancellationToken.None);
     }
 
     if (isDemoCatalogVerifyCommand)
@@ -185,7 +191,7 @@ if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
     }
 }
 
-if (isDemoIdentitySeedCommand || isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
+if (isDemoIdentitySeedCommand || isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand || isDemoImageSeedCommand)
 {
     return;
 }
