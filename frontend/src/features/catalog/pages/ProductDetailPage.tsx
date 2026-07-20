@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ApiError } from "../../../shared/api/apiClient";
+import { ApiError, getImageUrl } from "../../../shared/api/apiClient";
 import { useCart } from "../../cart";
 import { getProductBySlug } from "../api/catalogApi";
 import type { ProductDetail } from "../types/catalogTypes";
@@ -129,7 +129,7 @@ export function ProductDetailPage() {
         <div className="product-detail__gallery">
           <div className="product-detail__image-container">
             {primaryImage ? (
-              <img src={primaryImage.url} alt={product.name} className="product-detail__main-img" />
+              <img src={getImageUrl(primaryImage.url)} alt={product.name} className="product-detail__main-img" />
             ) : (
               <div className="product-detail__placeholder">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
