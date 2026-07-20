@@ -161,6 +161,7 @@ Lệnh seed có thể chạy lặp lại: chỉ thêm danh mục, đơn vị tí
 
 ```powershell
 dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-identities --seed-demo-catalog
+dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-images
 dotnet run --project backend/src/GroceryStore.Api -- --verify-demo-catalog
 ```
 
