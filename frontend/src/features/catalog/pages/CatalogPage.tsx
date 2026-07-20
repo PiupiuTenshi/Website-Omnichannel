@@ -21,9 +21,26 @@ export function CatalogPage() {
   const [searchInput, setSearchInput] = useState("");
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const categoryNavRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const productsHeaderRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const nav = categoryNavRef.current;
+    if (!nav) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY;
+      }
+    };
+
+    nav.addEventListener("wheel", handleWheel, { passive: false });
+    return () => nav.removeEventListener("wheel", handleWheel);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     void getCategories()
@@ -236,7 +253,7 @@ export function CatalogPage() {
       </form>
 
       {/* Visual Category Circular Icons */}
-      <div className="catalog-page__category-nav" role="group" aria-label="Lọc theo danh mục">
+      <div className="catalog-page__category-nav" role="group" aria-label="Lọc theo danh mục" ref={categoryNavRef}>
         <button
           type="button"
           className={`cat-circle-btn ${categoryId === "" ? "active" : ""}`}
