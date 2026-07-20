@@ -1,17 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCart, removeCartItem, setCartItem } from "../api/cartApi";
 import type { Cart } from "../types/cartTypes";
-
-interface CartContextValue {
-  cart: Cart | null;
-  itemCount: number;
-  addItem: (productVariantId: string, quantity: number) => Promise<void>;
-  updateItem: (productVariantId: string, quantity: number) => Promise<void>;
-  removeItem: (productVariantId: string) => Promise<void>;
-  refreshCart: () => Promise<void>;
-}
-
-const CartContext = createContext<CartContextValue | null>(null);
+import { CartContext, type CartContextValue } from "./cartContext";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -67,8 +57,3 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-export function useCart(): CartContextValue {
-  const context = useContext(CartContext);
-  if (context === null) throw new Error("useCart must be used within CartProvider.");
-  return context;
-}

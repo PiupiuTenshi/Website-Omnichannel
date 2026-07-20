@@ -8,7 +8,21 @@ namespace GroceryStore.Application.Features.Orders;
 
 public sealed record CheckoutOnlineOrderCommand(string GuestSessionId, string? BuyerUserId, string RecipientName, string RecipientPhoneNumber, string DeliveryAddress, OnlinePaymentMethod PaymentMethod);
 public sealed record SetShippingQuoteCommand(decimal ShippingFee, string Message);
-public sealed record OnlineOrderResponse(Guid OnlineOrderId, string OrderCode, OnlineOrderStatus Status, OnlinePaymentStatus PaymentStatus, decimal Subtotal, decimal? ShippingFee, decimal Total, decimal? DistanceKm, string? ManagerMessage, DateTime CreatedAtUtc);
+public sealed record OnlineOrderResponse(
+    Guid OnlineOrderId,
+    string OrderCode,
+    OnlineOrderStatus Status,
+    OnlinePaymentStatus PaymentStatus,
+    decimal Subtotal,
+    decimal? ShippingFee,
+    decimal Total,
+    decimal? DistanceKm,
+    string? ManagerMessage,
+    DateTime CreatedAtUtc,
+    string RecipientName,
+    string RecipientPhoneNumber,
+    string DeliveryAddress,
+    OnlinePaymentMethod PaymentMethod);
 
 public sealed class OnlineOrderService(
     IShoppingCartRepository shoppingCartRepository,
@@ -64,6 +78,7 @@ public sealed class OnlineOrderService(
             await inventoryReservationService.ReserveCartAsync(command.GuestSessionId, command.BuyerUserId, cancellationToken, false);
             await onlineOrderRepository.AddAsync(order, cancellationToken);
             await onlineOrderRepository.CaptureAllocationsAsync(order, command.GuestSessionId, cancellationToken);
+            cart.Clear(utcNow);
             await onlineOrderRepository.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
         return ToResponse(order);
@@ -141,6 +156,15 @@ public sealed class OnlineOrderService(
         return ToResponse(order);
     }
 
+    public async Task<OnlineOrderResponse> MarkPreparingAsync(Guid onlineOrderId, CancellationToken cancellationToken)
+    {
+        var order = await onlineOrderRepository.GetForManagementAsync(onlineOrderId, cancellationToken)
+            ?? throw new KeyNotFoundException("Online order was not found.");
+        order.MarkPreparing(DateTime.UtcNow);
+        await onlineOrderRepository.SaveChangesAsync(cancellationToken);
+        return ToResponse(order);
+    }
+
     public async Task<OnlineOrderResponse> MarkDeliveredAsync(Guid onlineOrderId, CancellationToken cancellationToken)
     {
         var order = await onlineOrderRepository.GetForManagementAsync(onlineOrderId, cancellationToken)
@@ -159,6 +183,18 @@ public sealed class OnlineOrderService(
         return ToResponse(order);
     }
 
+    public async Task<IReadOnlyList<OnlineOrderResponse>> GetOrdersForManagementAsync(CancellationToken cancellationToken)
+    {
+        var orders = await onlineOrderRepository.GetOrdersForManagementAsync(cancellationToken);
+        return orders.Select(ToResponse).ToArray();
+    }
+
+    public async Task<IReadOnlyList<OnlineOrderResponse>> GetOrdersForBuyerAsync(string buyerUserId, CancellationToken cancellationToken)
+    {
+        var orders = await onlineOrderRepository.GetOrdersForBuyerAsync(buyerUserId, cancellationToken);
+        return orders.Select(ToResponse).ToArray();
+    }
+
     private static void ValidateCheckout(CheckoutOnlineOrderCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.GuestSessionId) || string.IsNullOrWhiteSpace(command.RecipientName) || string.IsNullOrWhiteSpace(command.RecipientPhoneNumber) || string.IsNullOrWhiteSpace(command.DeliveryAddress))
@@ -167,5 +203,19 @@ public sealed class OnlineOrderService(
         }
     }
 
-    private static OnlineOrderResponse ToResponse(OnlineOrder order) => new(order.OnlineOrderId, order.OrderCode, order.Status, order.PaymentStatus, order.Subtotal, order.ShippingFee, order.Total, order.DistanceKm, order.ManagerMessage, order.CreatedAtUtc);
+    private static OnlineOrderResponse ToResponse(OnlineOrder order) => new(
+        order.OnlineOrderId,
+        order.OrderCode,
+        order.Status,
+        order.PaymentStatus,
+        order.Subtotal,
+        order.ShippingFee,
+        order.Total,
+        order.DistanceKm,
+        order.ManagerMessage,
+        order.CreatedAtUtc,
+        order.RecipientName,
+        order.RecipientPhoneNumber,
+        order.DeliveryAddress,
+        order.PaymentMethod);
 }

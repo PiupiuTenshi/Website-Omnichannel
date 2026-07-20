@@ -32,7 +32,7 @@ export function SellerDashboardPage() {
           <p className="seller-dashboard__hero-description">
             Quét mã vạch sản phẩm hoặc tìm nhanh theo tên. Hệ thống hỗ trợ làm tròn tiền mặt lên mốc 1.000 đồng gần nhất, tự động in hóa đơn 58 mm.
           </p>
-          <Link to="/admin/pos" className="seller-dashboard__hero-button">
+          <Link to="/manager/pos" className="seller-dashboard__hero-button">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
               <line x1="6" y1="8" x2="18" y2="8" />

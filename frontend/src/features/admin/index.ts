@@ -3,5 +3,7 @@ export { AdminDashboardPage } from "./pages/AdminDashboardPage";
 export { ManagerDashboardPage } from "./pages/ManagerDashboardPage";
 export { SellerDashboardPage } from "./pages/SellerDashboardPage";
 export { AuditLogsPage } from "./pages/AuditLogsPage";
-
-
+export { ReportsPage } from "./pages/ReportsPage";
+export { UserManagementPage } from "./pages/UserManagementPage";
+export { AdminOrdersPage } from "./pages/AdminOrdersPage";
+export { PromotionsPage } from "./pages/PromotionsPage";

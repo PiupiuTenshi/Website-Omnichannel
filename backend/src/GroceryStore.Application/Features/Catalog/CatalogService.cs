@@ -150,7 +150,8 @@ public sealed class CatalogService
         var result = await catalogRepository.SearchProductsAsync(
             new CatalogProductSearch(searchTerm?.Trim(), categoryId, page, pageSize, false),
             cancellationToken);
-        return new PagedResponse<ProductListItemResponse>(result.Products.Select(ToListItemResponse).ToArray(), page, pageSize, result.TotalCount);
+        var now = DateTime.UtcNow;
+        return new PagedResponse<ProductListItemResponse>(result.Products.Select(product => ToListItemResponse(product, now, true)).ToArray(), page, pageSize, result.TotalCount);
     }
 
     public async Task<PagedResponse<ProductListItemResponse>> SearchProductsForAdministrationAsync(
@@ -164,7 +165,7 @@ public sealed class CatalogService
         var result = await catalogRepository.SearchProductsAsync(
             new CatalogProductSearch(searchTerm?.Trim(), categoryId, page, pageSize, true),
             cancellationToken);
-        return new PagedResponse<ProductListItemResponse>(result.Products.Select(ToListItemResponse).ToArray(), page, pageSize, result.TotalCount);
+        return new PagedResponse<ProductListItemResponse>(result.Products.Select(product => ToListItemResponse(product, DateTime.UtcNow, false)).ToArray(), page, pageSize, result.TotalCount);
     }
 
     public async Task<ProductDetailResponse> GetProductAsync(Guid productId, CancellationToken cancellationToken)
@@ -279,7 +280,9 @@ public sealed class CatalogService
             NormalizeBarcode(command.Barcode),
             command.SellingPrice,
             command.CompareAtPrice,
-            command.IsActive);
+            command.IsActive,
+            command.PromotionStartAtUtc,
+            command.PromotionEndAtUtc);
         await catalogRepository.SaveChangesAsync(cancellationToken);
         return ToResponse(variant);
     }
@@ -426,15 +429,32 @@ public sealed class CatalogService
             variant.SellingPrice,
             variant.CompareAtPrice,
             variant.IsActive,
-            Convert.ToBase64String(variant.RowVersion));
+            Convert.ToBase64String(variant.RowVersion),
+            variant.PromotionStartAtUtc,
+            variant.PromotionEndAtUtc);
     }
 
-    private static ProductListItemResponse ToListItemResponse(Product product)
+    private static ProductListItemResponse ToListItemResponse(Product product, DateTime nowUtc, bool applyPromotionSchedule)
     {
-        var variant = product.Variants.Where(candidate => candidate.IsActive).OrderBy(candidate => candidate.SellingPrice).FirstOrDefault()
+        var activeVariants = product.Variants.Where(candidate => candidate.IsActive).ToArray();
+        var scheduledPromotion = applyPromotionSchedule
+            ? activeVariants
+                .Where(candidate => candidate.CompareAtPrice is not null
+                    && candidate.CompareAtPrice > candidate.SellingPrice
+                    && candidate.PromotionStartAtUtc <= nowUtc
+                    && nowUtc < candidate.PromotionEndAtUtc)
+                .OrderBy(candidate => candidate.SellingPrice)
+                .FirstOrDefault()
+            : null;
+        var variant = scheduledPromotion
+            ?? activeVariants.OrderBy(candidate => candidate.SellingPrice).FirstOrDefault()
             ?? product.Variants.OrderBy(candidate => candidate.SellingPrice).FirstOrDefault()
             ?? throw new BusinessRuleViolationException("Product has no variants.");
         var primaryImage = product.Images.OrderByDescending(image => image.IsPrimary).ThenBy(image => image.SortOrder).FirstOrDefault();
+        var hasCurrentPromotion = scheduledPromotion is not null;
+        var sellingPrice = applyPromotionSchedule && !hasCurrentPromotion && variant.CompareAtPrice is not null && variant.CompareAtPrice > variant.SellingPrice
+            ? variant.CompareAtPrice.Value
+            : variant.SellingPrice;
         return new ProductListItemResponse(
             product.ProductId,
             variant.ProductVariantId,
@@ -442,10 +462,12 @@ public sealed class CatalogService
             product.Slug,
             product.Category?.Name ?? string.Empty,
             product.UnitOfMeasure?.Name ?? string.Empty,
-            variant.SellingPrice,
-            variant.CompareAtPrice,
+            sellingPrice,
+            hasCurrentPromotion ? variant.CompareAtPrice : applyPromotionSchedule ? null : variant.CompareAtPrice,
             primaryImage is null ? null : GetImageUrl(primaryImage),
-            product.UnitOfMeasure?.AllowsDecimal ?? false);
+            product.UnitOfMeasure?.AllowsDecimal ?? false,
+            hasCurrentPromotion ? variant.PromotionStartAtUtc : null,
+            hasCurrentPromotion ? variant.PromotionEndAtUtc : null);
     }
 
     private static ProductDetailResponse ToDetailResponse(Product product)

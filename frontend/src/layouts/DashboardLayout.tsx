@@ -1,15 +1,29 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth";
+import { getPublicStoreSettings } from "../features/admin/api/storeSettingsApi";
+import type { StoreSettings } from "../features/admin/types/storeSettingsTypes";
 import "./DashboardLayout.css";
 
 export function DashboardLayout() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+
+  useEffect(() => {
+    getPublicStoreSettings()
+      .then(setStoreSettings)
+      .catch(() => {});
+  }, []);
 
   if (session === null) {
     return null;
+  }
+
+  if (location.pathname === "/manager/pos") {
+    return <Outlet />;
   }
 
   const roles = session.roles;
@@ -40,7 +54,7 @@ export function DashboardLayout() {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
-            <span>Tạp hóa chị Tỏ</span>
+            <span>{storeSettings?.name || "Tạp hóa chị Tỏ"}</span>
           </Link>
           <div className="dashboard-layout__role-tag">Hệ Thống Quản Trị</div>
         </div>
@@ -64,7 +78,7 @@ export function DashboardLayout() {
                 <span>Dashboard Admin</span>
               </NavLink>
               <NavLink
-                to="/admin/store-settings"
+                to="/manager/store-settings"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -73,6 +87,19 @@ export function DashboardLayout() {
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
                 <span>Cấu hình cửa hàng</span>
+              </NavLink>
+              <NavLink
+                to="/admin/users"
+                className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Quản lý tài khoản</span>
               </NavLink>
               <NavLink
                 to="/admin/audit-logs"
@@ -108,17 +135,39 @@ export function DashboardLayout() {
                 <span>Dashboard Quản lý</span>
               </NavLink>
               <NavLink
-                to="/admin/products/new"
+                to="/manager/products"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12.89 2.24a2 2 0 0 0-1.78 0L3.78 6.1a2 2 0 0 0-1.11 1.78v8.24a2 2 0 0 0 1.11 1.78l7.33 3.86a2 2 0 0 0 1.78 0l7.33-3.86a2 2 0 0 0 1.11-1.78V7.88a2 2 0 0 0-1.11-1.78zm-1.39 2.8L18 8.5l-2.5 1.3-6.5-3.41zM5 9.5l6 3.16v6.84l-6-3.16zm8 10v-6.84l6-3.16v6.84z" />
                 </svg>
-                <span>Thêm sản phẩm</span>
+                <span>Quản lý sản phẩm</span>
               </NavLink>
               <NavLink
-                to="/admin/inventory/suppliers"
+                to="/manager/promotions"
+                className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span>Chương trình giảm giá</span>
+              </NavLink>
+              <NavLink
+                to="/manager/orders"
+                className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+                <span>Quản lý đơn hàng</span>
+              </NavLink>
+              <NavLink
+                to="/manager/inventory/suppliers"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -131,7 +180,7 @@ export function DashboardLayout() {
                 <span>Nhà cung cấp</span>
               </NavLink>
               <NavLink
-                to="/admin/inventory/receive"
+                to="/manager/inventory/receive"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -141,7 +190,7 @@ export function DashboardLayout() {
                 <span>Nhập kho</span>
               </NavLink>
               <NavLink
-                to="/admin/inventory/batches"
+                to="/manager/inventory/batches"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -156,7 +205,7 @@ export function DashboardLayout() {
                 <span>Lô hàng</span>
               </NavLink>
               <NavLink
-                to="/admin/inventory/low-stock"
+                to="/manager/inventory/low-stock"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -186,7 +235,18 @@ export function DashboardLayout() {
                 <span>Dashboard Seller</span>
               </NavLink>
               <NavLink
-                to="/admin/pos"
+                to="/seller/price-tags"
+                className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                  <path d="M8 9h8M8 13h8M8 17h4" />
+                </svg>
+                <span>In tag giá</span>
+              </NavLink>
+              <NavLink
+                to="/manager/pos"
                 className={({ isActive }) => `dashboard-layout__nav-link ${isActive ? "dashboard-layout__nav-link--active" : ""}`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -256,7 +316,7 @@ export function DashboardLayout() {
           </button>
 
           <div className="dashboard-layout__breadcrumb">
-            <span className="dashboard-layout__title-main">Tạp hóa chị Tỏ</span>
+            <span className="dashboard-layout__title-main">{storeSettings?.name || "Tạp hóa chị Tỏ"}</span>
             <span className="dashboard-layout__title-separator">/</span>
             <span className="dashboard-layout__title-sub">Hệ thống quản trị</span>
           </div>

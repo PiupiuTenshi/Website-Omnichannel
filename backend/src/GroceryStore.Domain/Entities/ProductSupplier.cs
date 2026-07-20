@@ -20,4 +20,9 @@ public sealed class ProductSupplier
     public string? SupplierProductCode { get; private set; }
     public bool IsPreferred { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+
+    public void SetPreferred(bool isPreferred)
+    {
+        IsPreferred = isPreferred;
+    }
 }

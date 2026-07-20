@@ -10,4 +10,6 @@ public sealed record ProductListItemResponse(
     decimal SellingPrice,
     decimal? CompareAtPrice,
     string? PrimaryImageUrl,
-    bool IsWeighed);
+    bool IsWeighed,
+    DateTime? PromotionStartAtUtc,
+    DateTime? PromotionEndAtUtc);

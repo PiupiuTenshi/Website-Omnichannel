@@ -11,13 +11,16 @@ public sealed class ExceptionHandlingMiddleware
 
     private readonly RequestDelegate next;
     private readonly ILogger<ExceptionHandlingMiddleware> logger;
+    private readonly IHostEnvironment environment;
 
     public ExceptionHandlingMiddleware(
         RequestDelegate next,
-        ILogger<ExceptionHandlingMiddleware> logger)
+        ILogger<ExceptionHandlingMiddleware> logger,
+        IHostEnvironment environment)
     {
         this.next = next;
         this.logger = logger;
+        this.environment = environment;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -45,10 +48,14 @@ public sealed class ExceptionHandlingMiddleware
             context.Response.ContentType = "application/json";
 
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
-            var message = context.Response.StatusCode == StatusCodes.Status500InternalServerError
-                ? "An unexpected error occurred."
-                : exception.Message;
-            var response = new ErrorResponse(message, context.Response.StatusCode, traceId);
+            object response = context.Response.StatusCode == StatusCodes.Status500InternalServerError && environment.IsDevelopment()
+                ? new { title = exception.Message, status = context.Response.StatusCode, traceId }
+                : new ErrorResponse(
+                    context.Response.StatusCode == StatusCodes.Status500InternalServerError
+                        ? "An unexpected error occurred."
+                        : exception.Message,
+                    context.Response.StatusCode,
+                    traceId);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, JSON_OPTIONS));
         }
     }

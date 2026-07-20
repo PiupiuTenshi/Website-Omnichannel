@@ -35,56 +35,71 @@ public sealed class ShoppingCartService(IShoppingCartRepository shoppingCartRepo
             : await ToResponseAsync(cart, cancellationToken);
     }
 
-    public async Task<ShoppingCartResponse> SetGuestItemAsync(string sessionId, SetCartItemCommand command, CancellationToken cancellationToken)
+    public async Task<ShoppingCartResponse> SetItemAsync(string? sessionId, string? userId, SetCartItemCommand command, CancellationToken cancellationToken)
     {
-        var normalizedSessionId = NormalizeSessionId(sessionId);
         await ValidateQuantityAsync(command, cancellationToken);
         var utcNow = DateTime.UtcNow;
-        var cart = await shoppingCartRepository.GetGuestCartAsync(normalizedSessionId, cancellationToken);
-        if (cart is null)
+        ShoppingCart? cart;
+
+        if (userId is not null)
         {
-            cart = ShoppingCart.CreateGuest(normalizedSessionId, utcNow);
-            await shoppingCartRepository.AddAsync(cart, cancellationToken);
+            cart = await shoppingCartRepository.GetUserCartAsync(userId, cancellationToken);
+            if (cart is null)
+            {
+                cart = ShoppingCart.CreateForUser(userId, utcNow);
+                await shoppingCartRepository.AddAsync(cart, cancellationToken);
+            }
+        }
+        else
+        {
+            var normalizedSessionId = NormalizeSessionId(sessionId!);
+            cart = await shoppingCartRepository.GetGuestCartAsync(normalizedSessionId, cancellationToken);
+            if (cart is null)
+            {
+                cart = ShoppingCart.CreateGuest(normalizedSessionId, utcNow);
+                await shoppingCartRepository.AddAsync(cart, cancellationToken);
+            }
         }
 
-        cart.SetItemQuantity(command.ProductVariantId, command.Quantity, utcNow);
+        var addedItem = cart.SetItemQuantity(command.ProductVariantId, command.Quantity, utcNow);
+        if (addedItem is not null && cart.ShoppingCartId != Guid.Empty)
+        {
+            await shoppingCartRepository.AddItemAsync(addedItem, cancellationToken);
+        }
         await shoppingCartRepository.SaveChangesAsync(cancellationToken);
         return await ToResponseAsync(cart, cancellationToken);
     }
 
-    public async Task<ShoppingCartResponse> SetUserItemAsync(string userId, SetCartItemCommand command, CancellationToken cancellationToken)
+    public async Task<ShoppingCartResponse> RemoveItemAsync(string? sessionId, string? userId, Guid productVariantId, CancellationToken cancellationToken)
     {
-        await ValidateQuantityAsync(command, cancellationToken);
-        var utcNow = DateTime.UtcNow;
-        var cart = await shoppingCartRepository.GetUserCartAsync(userId, cancellationToken);
-        if (cart is null)
+        ShoppingCart? cart;
+        if (userId is not null)
         {
-            cart = ShoppingCart.CreateForUser(userId, utcNow);
-            await shoppingCartRepository.AddAsync(cart, cancellationToken);
+            cart = await shoppingCartRepository.GetUserCartAsync(userId, cancellationToken)
+                ?? throw new KeyNotFoundException("User cart was not found.");
+        }
+        else
+        {
+            cart = await shoppingCartRepository.GetGuestCartAsync(NormalizeSessionId(sessionId!), cancellationToken)
+                ?? throw new KeyNotFoundException("Guest cart was not found.");
         }
 
-        cart.SetItemQuantity(command.ProductVariantId, command.Quantity, utcNow);
-        await shoppingCartRepository.SaveChangesAsync(cancellationToken);
-        return await ToResponseAsync(cart, cancellationToken);
-    }
-
-    public async Task<ShoppingCartResponse> RemoveGuestItemAsync(string sessionId, Guid productVariantId, CancellationToken cancellationToken)
-    {
-        var cart = await shoppingCartRepository.GetGuestCartAsync(NormalizeSessionId(sessionId), cancellationToken)
-            ?? throw new KeyNotFoundException("Guest cart was not found.");
         cart.RemoveItem(productVariantId, DateTime.UtcNow);
         await shoppingCartRepository.SaveChangesAsync(cancellationToken);
         return await ToResponseAsync(cart, cancellationToken);
     }
 
-    public async Task<ShoppingCartResponse> RemoveUserItemAsync(string userId, Guid productVariantId, CancellationToken cancellationToken)
-    {
-        var cart = await shoppingCartRepository.GetUserCartAsync(userId, cancellationToken)
-            ?? throw new KeyNotFoundException("User cart was not found.");
-        cart.RemoveItem(productVariantId, DateTime.UtcNow);
-        await shoppingCartRepository.SaveChangesAsync(cancellationToken);
-        return await ToResponseAsync(cart, cancellationToken);
-    }
+    public Task<ShoppingCartResponse> SetGuestItemAsync(string sessionId, SetCartItemCommand command, CancellationToken cancellationToken) =>
+        SetItemAsync(sessionId, null, command, cancellationToken);
+
+    public Task<ShoppingCartResponse> RemoveGuestItemAsync(string sessionId, Guid productVariantId, CancellationToken cancellationToken) =>
+        RemoveItemAsync(sessionId, null, productVariantId, cancellationToken);
+
+    public Task<ShoppingCartResponse> SetUserItemAsync(string userId, SetCartItemCommand command, CancellationToken cancellationToken) =>
+        SetItemAsync(null, userId, command, cancellationToken);
+
+    public Task<ShoppingCartResponse> RemoveUserItemAsync(string userId, Guid productVariantId, CancellationToken cancellationToken) =>
+        RemoveItemAsync(null, userId, productVariantId, cancellationToken);
 
     public async Task<ShoppingCartResponse> MergeGuestCartAsync(string sessionId, string userId, CancellationToken cancellationToken)
     {
@@ -99,7 +114,11 @@ public sealed class ShoppingCartService(IShoppingCartRepository shoppingCartRepo
 
         if (guestCart is not null)
         {
-            userCart.MergeFrom(guestCart, utcNow);
+            var addedItems = userCart.MergeFrom(guestCart, utcNow);
+            foreach (var addedItem in addedItems)
+            {
+                await shoppingCartRepository.AddItemAsync(addedItem, cancellationToken);
+            }
         }
 
         await shoppingCartRepository.SaveChangesAsync(cancellationToken);

@@ -44,7 +44,7 @@ public sealed class ShoppingCart
 
     public static ShoppingCart CreateForUser(string userId, DateTime utcNow) => new(null, userId, utcNow);
 
-    public void SetItemQuantity(Guid productVariantId, decimal quantity, DateTime utcNow)
+    public ShoppingCartItem? SetItemQuantity(Guid productVariantId, decimal quantity, DateTime utcNow)
     {
         if (quantity <= 0)
         {
@@ -54,14 +54,15 @@ public sealed class ShoppingCart
         var existingItem = items.SingleOrDefault(item => item.ProductVariantId == productVariantId);
         if (existingItem is null)
         {
-            items.Add(new ShoppingCartItem(ShoppingCartId, productVariantId, quantity, utcNow));
-        }
-        else
-        {
-            existingItem.SetQuantity(quantity, utcNow);
+            var createdItem = new ShoppingCartItem(ShoppingCartId, productVariantId, quantity, utcNow);
+            items.Add(createdItem);
+            UpdatedAtUtc = utcNow;
+            return createdItem;
         }
 
+        existingItem.SetQuantity(quantity, utcNow);
         UpdatedAtUtc = utcNow;
+        return null;
     }
 
     public void RemoveItem(Guid productVariantId, DateTime utcNow)
@@ -74,14 +75,23 @@ public sealed class ShoppingCart
         }
     }
 
-    public void MergeFrom(ShoppingCart guestCart, DateTime utcNow)
+    public void Clear(DateTime utcNow)
     {
+        items.Clear();
+        UpdatedAtUtc = utcNow;
+    }
+
+    public IReadOnlyCollection<ShoppingCartItem> MergeFrom(ShoppingCart guestCart, DateTime utcNow)
+    {
+        var addedItems = new List<ShoppingCartItem>();
         foreach (var guestItem in guestCart.Items)
         {
             var existingItem = items.SingleOrDefault(item => item.ProductVariantId == guestItem.ProductVariantId);
             if (existingItem is null)
             {
-                items.Add(new ShoppingCartItem(ShoppingCartId, guestItem.ProductVariantId, guestItem.Quantity, utcNow));
+                var addedItem = new ShoppingCartItem(ShoppingCartId, guestItem.ProductVariantId, guestItem.Quantity, utcNow);
+                items.Add(addedItem);
+                addedItems.Add(addedItem);
             }
             else
             {
@@ -91,6 +101,7 @@ public sealed class ShoppingCart
 
         guestCart.MarkMerged(utcNow);
         UpdatedAtUtc = utcNow;
+        return addedItems;
     }
 
     private void MarkMerged(DateTime utcNow)

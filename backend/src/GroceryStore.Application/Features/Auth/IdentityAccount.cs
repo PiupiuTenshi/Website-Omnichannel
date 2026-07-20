@@ -6,6 +6,9 @@ public sealed record IdentityAccount(
     string? NormalizedEmail,
     string? PhoneNumber,
     string? NormalizedPhoneNumber,
+    string? DisplayName,
+    string? DefaultDeliveryAddress,
     bool EmailConfirmed,
     bool PhoneNumberConfirmed,
-    bool IsActive);
+    bool IsActive,
+    bool RequiresInitialActivation);

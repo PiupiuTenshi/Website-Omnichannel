@@ -14,7 +14,7 @@ public sealed class MockSmsOtpSender : ISmsOtpSender
 
     public Task SendAsync(string phoneNumber, string code, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Mock SMS OTP requested for {PhoneNumber}", phoneNumber);
+        logger.LogInformation("Mock SMS OTP requested for {PhoneNumber}. Code: {Code}", phoneNumber, code);
         return Task.CompletedTask;
     }
 }

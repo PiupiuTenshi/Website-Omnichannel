@@ -10,6 +10,8 @@ public interface IOnlineOrderRepository
     Task ReleaseAllocationsAsync(OnlineOrder order, DateTime releasedAtUtc, CancellationToken cancellationToken);
     Task<OnlineOrder?> GetAccessibleAsync(Guid onlineOrderId, string guestSessionId, string? buyerUserId, CancellationToken cancellationToken);
     Task<OnlineOrder?> GetForManagementAsync(Guid onlineOrderId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<OnlineOrder>> GetOrdersForManagementAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<OnlineOrder>> GetOrdersForBuyerAsync(string buyerUserId, CancellationToken cancellationToken);
     Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

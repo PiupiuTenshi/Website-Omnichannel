@@ -44,19 +44,33 @@ public sealed class ProductVariant
 
     public bool IsActive { get; private set; }
 
+    public DateTime? PromotionStartAtUtc { get; private set; }
+
+    public DateTime? PromotionEndAtUtc { get; private set; }
+
     public DateTime CreatedAtUtc { get; private set; }
 
     public DateTime UpdatedAtUtc { get; private set; }
 
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
-    public void Update(string name, string sku, string? barcode, decimal sellingPrice, decimal? compareAtPrice, bool isActive)
+    public void Update(
+        string name,
+        string sku,
+        string? barcode,
+        decimal sellingPrice,
+        decimal? compareAtPrice,
+        bool isActive,
+        DateTime? promotionStartAtUtc = null,
+        DateTime? promotionEndAtUtc = null)
     {
         Name = name;
         Sku = sku;
         Barcode = barcode;
         SetPrices(sellingPrice, compareAtPrice);
         IsActive = isActive;
+        PromotionStartAtUtc = promotionStartAtUtc;
+        PromotionEndAtUtc = promotionEndAtUtc;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

@@ -686,6 +686,12 @@ namespace GroceryStore.Persistence.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("PromotionEndAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PromotionStartAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -1052,6 +1058,14 @@ namespace GroceryStore.Persistence.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DefaultDeliveryAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -1090,6 +1104,11 @@ namespace GroceryStore.Persistence.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("RequiresInitialActivation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");

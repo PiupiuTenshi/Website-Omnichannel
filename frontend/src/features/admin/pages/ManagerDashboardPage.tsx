@@ -29,9 +29,15 @@ export function ManagerDashboardPage() {
         setSuppliers(loadedSuppliers);
         setBatches(loadedBatches);
         setLowStockItems(loadedLowStock);
-      } catch (err) {
-        console.error("Lỗi khi tải dữ liệu Manager Dashboard:", err);
-        setError("Không thể tải đầy đủ dữ liệu thống kê từ hệ thống.");
+      } catch (requestError) {
+        setSuppliers([]);
+        setBatches([]);
+        setLowStockItems([]);
+        if (requestError instanceof Error) {
+          setError(requestError.message);
+          return;
+        }
+        setError("Không thể tải dữ liệu quản trị. Vui lòng kiểm tra kết nối rồi thử lại.");
       } finally {
         setIsLoading(false);
       }
@@ -49,6 +55,7 @@ export function ManagerDashboardPage() {
   // Calculate expired batches (status 3 or checking date comparison)
   const expiredBatchesCount = batches.filter(b => b.status === 3 || (b.expiresAtUtc && new Date(b.expiresAtUtc) < new Date())).length;
   const lowStockAlertCount = lowStockItems.length;
+  const discountedBatchesCount = batches.filter(b => b.compareAtPrice !== null && b.compareAtPrice > b.sellingPrice).length;
 
   return (
     <div className="manager-dashboard">
@@ -116,6 +123,21 @@ export function ManagerDashboardPage() {
 
         <div className="manager-dashboard__stat-card">
           <div className="manager-dashboard__stat-header">
+            <span className="manager-dashboard__stat-title">Lô hàng giảm giá</span>
+            <div className="manager-dashboard__stat-icon" style={{ color: "var(--color-primary-strong)" }}>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+          </div>
+          <div className="manager-dashboard__stat-value">
+            {isLoading ? "..." : discountedBatchesCount}
+          </div>
+          <p className="manager-dashboard__stat-desc">Các lô hàng hiện tại đang áp dụng ưu đãi giảm giá.</p>
+        </div>
+
+        <div className="manager-dashboard__stat-card">
+          <div className="manager-dashboard__stat-header">
             <span className="manager-dashboard__stat-title">Tổng số lô hàng</span>
             <div className="manager-dashboard__stat-icon">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -138,7 +160,7 @@ export function ManagerDashboardPage() {
             <h2 className="manager-dashboard__card-title" id="quick-actions-heading">Lối tắt thao tác nhanh</h2>
           </header>
           <div className="manager-dashboard__actions-grid">
-            <Link to="/admin/products/new" className="manager-dashboard__action-button">
+            <Link to="/manager/products/new" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -151,7 +173,19 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/receive" className="manager-dashboard__action-button">
+            <Link to="/manager/promotions" className="manager-dashboard__action-button">
+              <div className="manager-dashboard__action-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <div className="manager-dashboard__action-text">
+                <h3>Thiết lập giảm giá</h3>
+                <p>Điều chỉnh giá bán khuyến mãi và giá so sánh của sản phẩm.</p>
+              </div>
+            </Link>
+
+            <Link to="/manager/inventory/receive" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -165,7 +199,7 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/suppliers" className="manager-dashboard__action-button">
+            <Link to="/manager/inventory/suppliers" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -178,7 +212,7 @@ export function ManagerDashboardPage() {
               </div>
             </Link>
 
-            <Link to="/admin/inventory/batches" className="manager-dashboard__action-button">
+            <Link to="/manager/inventory/batches" className="manager-dashboard__action-button">
               <div className="manager-dashboard__action-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="8" y1="6" x2="21" y2="6" />
@@ -198,7 +232,7 @@ export function ManagerDashboardPage() {
         <section className="manager-dashboard__card" aria-labelledby="low-stock-heading">
           <header className="manager-dashboard__card-header">
             <h2 className="manager-dashboard__card-title" id="low-stock-heading">Danh sách cần nhập gấp</h2>
-            <Link to="/admin/inventory/low-stock" className="manager-dashboard__card-link">Xem tất cả</Link>
+            <Link to="/manager/inventory/low-stock" className="manager-dashboard__card-link">Xem tất cả</Link>
           </header>
           
           {isLoading ? (

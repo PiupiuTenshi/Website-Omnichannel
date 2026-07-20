@@ -52,7 +52,7 @@ export function VerifyAccountPage() {
         <div className="auth-verify-grid">
           <form className="auth-form" onSubmit={(event) => handleVerification("email", event)} noValidate>
             <label className="auth-form__field" htmlFor="email-token">
-              <span>Email verification token</span>
+              <span>Email verification OTP</span>
               <input className="auth-form__input" id="email-token" value={emailToken} onChange={(event) => setEmailToken(event.target.value)} />
             </label>
             <button className="auth-form__submit" type="submit" disabled={isSubmitting || !emailToken.trim()}>Verify email</button>

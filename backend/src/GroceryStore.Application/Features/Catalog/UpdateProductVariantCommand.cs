@@ -6,4 +6,6 @@ public sealed record UpdateProductVariantCommand(
     string? Barcode,
     decimal SellingPrice,
     decimal? CompareAtPrice,
-    bool IsActive);
+    bool IsActive,
+    DateTime? PromotionStartAtUtc = null,
+    DateTime? PromotionEndAtUtc = null);

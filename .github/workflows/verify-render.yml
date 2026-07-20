@@ -1,0 +1,32 @@
+name: verify-render
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'backend/**'
+      - '.github/workflows/verify-render.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore backend/GroceryStore.sln
+      - name: Build and test
+        run: dotnet test backend/GroceryStore.sln --configuration Release --no-restore
+      - name: Verify deployed health endpoint
+        if: ${{ vars.RENDER_HEALTH_URL != '' }}
+        env:
+          RENDER_HEALTH_URL: ${{ vars.RENDER_HEALTH_URL }}
+        run: |
+          curl --fail --retry 3 --retry-delay 10 --max-time 60 "$RENDER_HEALTH_URL"

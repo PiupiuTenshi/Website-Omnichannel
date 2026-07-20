@@ -10,11 +10,27 @@ public interface IIdentityAccountService
 
     Task<IdentityAccount?> FindByIdAsync(string userId, CancellationToken cancellationToken);
 
+    Task<IdentityOperationResult> UpdateProfileAsync(string userId, string? displayName, string? defaultDeliveryAddress, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> SaveContactChangeRequestAsync(string userId, ContactChangeChannel channel, string newValue, string normalizedNewValue, string code, DateTime expiresAtUtc, CancellationToken cancellationToken);
+
+    Task<ContactChangeConfirmationResult> ConfirmContactChangeAsync(string userId, ContactChangeChannel channel, string code, DateTime utcNow, CancellationToken cancellationToken);
+
     Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    Task<string?> GeneratePasswordResetTokenAsync(string userId, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> ResetPasswordAsync(string userId, string token, string newPassword, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> ActivateOnFirstSignInAsync(string userId, CancellationToken cancellationToken);
 
     Task<IReadOnlyCollection<string>> GetRolesAsync(string userId, CancellationToken cancellationToken);
 
     Task<string?> GenerateEmailConfirmationTokenAsync(string userId, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> SaveEmailVerificationCodeAsync(string userId, string code, DateTime expiresAtUtc, CancellationToken cancellationToken);
 
     Task<IdentityOperationResult> ConfirmEmailAsync(ConfirmEmailCommand command, CancellationToken cancellationToken);
 
@@ -25,4 +41,12 @@ public interface IIdentityAccountService
     Task<IdentityOperationResult> SetUserActiveAsync(string userId, bool isActive, CancellationToken cancellationToken);
 
     Task<int> CountActiveAdminsAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<UserAccountSummary>> GetAllUsersAsync(CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> CreateUserWithRoleAsync(string? email, string? phoneNumber, string password, string role, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> ChangeUserRoleAsync(string userId, string newRole, CancellationToken cancellationToken);
+
+    Task<IdentityOperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken);
 }

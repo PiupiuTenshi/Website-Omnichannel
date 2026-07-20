@@ -39,7 +39,8 @@ export function InventoryBatchesPage() {
       const data = await getBatches(session.accessToken);
       setBatches(data);
     } catch {
-      setError("Không thể tải danh sách lô hàng.");
+      setBatches([]);
+      setError("Không thể tải danh sách lô hàng. Vui lòng kiểm tra kết nối rồi thử lại.");
     } finally {
       setLoading(false);
     }
@@ -52,6 +53,7 @@ export function InventoryBatchesPage() {
   // Apply filters client-side
   useEffect(() => {
     let result = [...batches];
+    const now = new Date();
 
     // Search
     if (search.trim()) {
@@ -64,14 +66,26 @@ export function InventoryBatchesPage() {
       );
     }
 
+    const getBatchDisplayStatus = (b: DetailedBatch, dateNow: Date): number => {
+      if (b.expiresAtUtc && new Date(b.expiresAtUtc) <= dateNow) {
+        return 3; // Expired
+      }
+      if (b.availableQuantity === 0) {
+        return 2; // Depleted (Hết hàng)
+      }
+      if (b.status === 1) {
+        return 1; // Quarantined (Kiểm định)
+      }
+      return 0; // Available (Khả dụng)
+    };
+
     // Status Filter
     if (statusFilter !== "all") {
       const statusInt = parseInt(statusFilter, 10);
-      result = result.filter((b) => b.status === statusInt);
+      result = result.filter((b) => getBatchDisplayStatus(b, now) === statusInt);
     }
 
     // Quick Filters
-    const now = new Date();
     const threeDaysLater = new Date();
     threeDaysLater.setDate(now.getDate() + 3);
 
@@ -89,6 +103,100 @@ export function InventoryBatchesPage() {
 
     setFilteredBatches(result);
   }, [batches, search, statusFilter, quickFilter]);
+
+  const escapeXml = (unsafe: string): string => {
+    return unsafe.replace(/[<>&'"]/g, (c) => {
+      switch (c) {
+        case "<": return "&lt;";
+        case ">": return "&gt;";
+        case "&": return "&amp;";
+        case "'": return "&apos;";
+        case "\"": return "&quot;";
+        default: return c;
+      }
+    });
+  };
+
+  const handleExportExcel = () => {
+    const now = new Date();
+    const getBatchDisplayStatus = (b: DetailedBatch, dateNow: Date): number => {
+      if (b.expiresAtUtc && new Date(b.expiresAtUtc) <= dateNow) {
+        return 3;
+      }
+      if (b.availableQuantity === 0) {
+        return 2;
+      }
+      if (b.status === 1) {
+        return 1;
+      }
+      return 0;
+    };
+
+    let xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Worksheet ss:Name="Lô hàng">
+  <Table>
+   <Row>
+    <Cell><Data ss:Type="String">Sản phẩm</Data></Cell>
+    <Cell><Data ss:Type="String">Phân loại</Data></Cell>
+    <Cell><Data ss:Type="String">SKU</Data></Cell>
+    <Cell><Data ss:Type="String">Nhà cung cấp</Data></Cell>
+    <Cell><Data ss:Type="String">Tồn khả dụng</Data></Cell>
+    <Cell><Data ss:Type="String">Tồn ban đầu</Data></Cell>
+    <Cell><Data ss:Type="String">Đơn vị</Data></Cell>
+    <Cell><Data ss:Type="String">Giá nhập (đ)</Data></Cell>
+    <Cell><Data ss:Type="String">Giá bán (đ)</Data></Cell>
+    <Cell><Data ss:Type="String">Giá gốc (đ)</Data></Cell>
+    <Cell><Data ss:Type="String">Hạn sử dụng</Data></Cell>
+    <Cell><Data ss:Type="String">Ngày nhập kho</Data></Cell>
+    <Cell><Data ss:Type="String">Trạng thái</Data></Cell>
+   </Row>`;
+
+    filteredBatches.forEach((b) => {
+      const displayStatus = getBatchDisplayStatus(b, now);
+      let statusText = "Khả dụng";
+      if (displayStatus === 3) statusText = "Đã hết hạn";
+      else if (displayStatus === 2) statusText = "Hết hàng";
+      else if (displayStatus === 1) statusText = "Kiểm định";
+
+      xml += `
+   <Row>
+    <Cell><Data ss:Type="String">${escapeXml(b.productName || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(b.variantName || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(b.sku || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(b.supplierName || "")}</Data></Cell>
+    <Cell><Data ss:Type="Number">${b.availableQuantity}</Data></Cell>
+    <Cell><Data ss:Type="Number">${b.initialQuantity}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(b.unitCode || "")}</Data></Cell>
+    <Cell><Data ss:Type="Number">${b.unitCost}</Data></Cell>
+    <Cell><Data ss:Type="Number">${b.sellingPrice || 0}</Data></Cell>
+    <Cell><Data ss:Type="String">${b.compareAtPrice ? String(b.compareAtPrice) : ""}</Data></Cell>
+    <Cell><Data ss:Type="String">${b.expiresAtUtc ? new Date(b.expiresAtUtc).toLocaleDateString("vi-VN") : "—"}</Data></Cell>
+    <Cell><Data ss:Type="String">${b.receivedAtUtc ? new Date(b.receivedAtUtc).toLocaleDateString("vi-VN") : "—"}</Data></Cell>
+    <Cell><Data ss:Type="String">${statusText}</Data></Cell>
+   </Row>`;
+    });
+
+    xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `danh-sach-lo-hang-${statusFilter}-${quickFilter}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   const handleOpenAdjust = (batch: DetailedBatch) => {
     setSelectedBatch(batch);
@@ -151,13 +259,27 @@ export function InventoryBatchesPage() {
   // Determine status badge
   const getStatusBadge = (batch: DetailedBatch) => {
     const now = new Date();
-    if (batch.expiresAtUtc && new Date(batch.expiresAtUtc) <= now) {
+    const getBatchDisplayStatus = (b: DetailedBatch, dateNow: Date): number => {
+      if (b.expiresAtUtc && new Date(b.expiresAtUtc) <= dateNow) {
+        return 3;
+      }
+      if (b.availableQuantity === 0) {
+        return 2;
+      }
+      if (b.status === 1) {
+        return 1;
+      }
+      return 0;
+    };
+
+    const displayStatus = getBatchDisplayStatus(batch, now);
+    if (displayStatus === 3) {
       return <span className="badge badge--danger">Đã hết hạn</span>;
     }
-    if (batch.availableQuantity === 0) {
+    if (displayStatus === 2) {
       return <span className="badge badge--secondary">Hết hàng</span>;
     }
-    if (batch.status === 1) {
+    if (displayStatus === 1) {
       return <span className="badge badge--warning">Kiểm định</span>;
     }
     return <span className="badge badge--success">Khả dụng</span>;
@@ -165,11 +287,19 @@ export function InventoryBatchesPage() {
 
   return (
     <section className="batches-page app-container" aria-labelledby="batches-heading">
-      <div className="batches-page__header">
+      <div className="batches-page__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 id="batches-heading" className="batches-page__title">Quản lý lô hàng tồn kho</h1>
           <p className="batches-page__subtitle">Theo dõi hạn sử dụng, chi phí nhập kho, tồn kho khả dụng và điều chỉnh tồn kho ledger</p>
         </div>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={() => handleExportExcel()}
+          disabled={filteredBatches.length === 0}
+        >
+          Xuất Excel lô hàng
+        </button>
       </div>
 
       {error && <div className="alert alert--danger" role="alert">{error}</div>}
@@ -236,6 +366,7 @@ export function InventoryBatchesPage() {
                       <th>Nhà cung cấp</th>
                       <th>Tồn kho</th>
                       <th>Giá nhập</th>
+                      <th>Giá bán</th>
                       <th>HSD</th>
                       <th>Nhập kho</th>
                       <th>Trạng thái</th>
@@ -256,6 +387,14 @@ export function InventoryBatchesPage() {
                           <span className="text-muted"> / {b.initialQuantity} {b.unitCode}</span>
                         </td>
                         <td>{formatCost(b.unitCost)}</td>
+                        <td>
+                          <div><strong>{formatCost(b.sellingPrice)}</strong></div>
+                          {b.compareAtPrice && b.compareAtPrice > b.sellingPrice && (
+                            <div className="text-muted" style={{ textDecoration: "line-through", fontSize: "0.85em" }}>
+                              {formatCost(b.compareAtPrice)}
+                            </div>
+                          )}
+                        </td>
                         <td className={b.expiresAtUtc && new Date(b.expiresAtUtc) <= new Date() ? "text-danger font-bold" : ""}>
                           {formatDate(b.expiresAtUtc)}
                         </td>
@@ -290,6 +429,14 @@ export function InventoryBatchesPage() {
                       <p><strong>Nhà cung cấp:</strong> {b.supplierName || "—"}</p>
                       <p><strong>Tồn kho:</strong> {b.availableQuantity} / {b.initialQuantity} {b.unitCode}</p>
                       <p><strong>Giá nhập:</strong> {formatCost(b.unitCost)}</p>
+                      <p>
+                        <strong>Giá bán:</strong> {formatCost(b.sellingPrice)}
+                        {b.compareAtPrice && b.compareAtPrice > b.sellingPrice && (
+                          <span className="text-muted" style={{ textDecoration: "line-through", marginLeft: "6px", fontSize: "0.9em" }}>
+                            ({formatCost(b.compareAtPrice)})
+                          </span>
+                        )}
+                      </p>
                       <p><strong>HSD:</strong> {formatDate(b.expiresAtUtc)}</p>
                       <p><strong>Nhập lúc:</strong> {formatDate(b.receivedAtUtc)}</p>
                     </div>

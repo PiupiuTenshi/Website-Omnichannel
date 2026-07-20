@@ -59,6 +59,9 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="product-card__footer">
           <div className="product-card__price-group">
             <span className="product-card__price">{formatCurrency(product.sellingPrice)}</span>
+            {product.compareAtPrice && product.compareAtPrice > product.sellingPrice && (
+              <span className="product-card__compare-price">{formatCurrency(product.compareAtPrice)}</span>
+            )}
             <span className="product-card__unit">/ {product.unitName}</span>
           </div>
           <button type="button" className="product-card__add-btn" aria-label={`Thêm ${product.name} vào giỏ hàng`} onClick={() => void addToCart()} disabled={isAdding}>

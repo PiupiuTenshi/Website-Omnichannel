@@ -79,7 +79,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(user => user.NormalizedPhoneNumber).HasMaxLength(15);
+            entity.Property(user => user.DisplayName).HasMaxLength(120);
+            entity.Property(user => user.DefaultDeliveryAddress).HasMaxLength(300);
             entity.Property(user => user.IsActive).HasDefaultValue(true);
+            entity.Property(user => user.RequiresInitialActivation).HasDefaultValue(false);
             entity.HasIndex(user => user.NormalizedEmail)
                 .IsUnique()
                 .HasFilter("[NormalizedEmail] IS NOT NULL");
@@ -195,6 +198,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(variant => variant.Barcode).HasMaxLength(64);
             entity.Property(variant => variant.SellingPrice).HasPrecision(18, 2).IsRequired();
             entity.Property(variant => variant.CompareAtPrice).HasPrecision(18, 2);
+            entity.Property(variant => variant.PromotionStartAtUtc);
+            entity.Property(variant => variant.PromotionEndAtUtc);
             entity.Property(variant => variant.RowVersion).IsRowVersion();
             entity.HasIndex(variant => variant.ProductId);
             entity.HasIndex(variant => variant.Sku).IsUnique();

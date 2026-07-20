@@ -1,0 +1,80 @@
+.price-tag-page { padding-block: var(--space-xl); }
+.price-tag-page__header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-md); margin-bottom: var(--space-lg); }
+.price-tag-page__header h1, .price-tag-page__preview-panel h2 { margin: 0; }
+.price-tag-page__header p { margin: var(--space-xs) 0 0; color: var(--color-text-muted); }
+.price-tag-page__content { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, .8fr); gap: var(--space-lg); align-items: start; }
+.price-tag-page__search-panel, .price-tag-page__preview-panel { padding: var(--space-lg); }
+.price-tag-page__results { display: grid; gap: var(--space-xs); margin-top: var(--space-md); max-height: 480px; overflow-y: auto; }
+.price-tag-page__result { display: flex; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--border-radius-md); background: var(--color-surface); cursor: pointer; text-align: left; }
+.price-tag-page__result:hover { border-color: var(--color-primary); background: var(--color-primary-light); }
+.price-tag-page__result--selected { border-color: var(--color-primary); background: var(--color-primary-light); }
+.price-tag-page__result span { display: grid; gap: 3px; }.price-tag-page__result small { color: var(--color-text-muted); }
+.price-tag-page__result-price { text-align: right; }
+.price-tag-page__error { color: var(--color-danger-strong); margin: var(--space-sm) 0 0; }
+.price-tag-page__empty { color: var(--color-text-muted); text-align: center; padding: var(--space-xl) 0; }
+.price-tag-page__preview-heading { display: flex; justify-content: space-between; gap: var(--space-sm); align-items: center; }
+.price-tag-page__tags { display: grid; grid-template-columns: repeat(auto-fit, minmax(60mm, 1fr)); gap: var(--space-md); margin: var(--space-lg) 0; }
+.price-tag-print { width: 60mm; height: 40mm; box-sizing: border-box; margin: 0 auto; padding: 3mm 4mm; border: 1px solid #0f172a; border-radius: 1mm; background: #fff; color: #000; display: grid; grid-template-columns: minmax(0, 1fr) 22mm; column-gap: 3mm; overflow: hidden; font-family: Arial, sans-serif; }
+.price-tag-print__product { min-width: 0; overflow: hidden; }.price-tag-print__brand { font-size: 8pt; font-weight: 800; white-space: nowrap; }.price-tag-print__title { margin-top: 3mm; font-size: 10pt; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }.price-tag-print__variant, .price-tag-print__sku { margin-top: 1.5mm; font-size: 7pt; line-height: 1.15; overflow-wrap: anywhere; }.price-tag-print__pricing { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: space-between; }.price-tag-print__barcode { width: 100%; font-family: monospace; font-size: 8pt; line-height: 1; text-align: center; overflow: hidden; }.price-tag-print__barcode span { display: block; margin-top: 1mm; font-size: 6pt; overflow-wrap: anywhere; }.price-tag-print__price { max-width: 100%; font-size: 13pt; font-weight: 800; line-height: 1; text-align: center; white-space: nowrap; }
+.price-tag-page__print-button { display: block; margin: 0 auto; }
+@media (max-width: 760px) { .price-tag-page__content { grid-template-columns: 1fr; }.price-tag-page__header { align-items: stretch; flex-direction: column; } }
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Hide irrelevant parts of the layout */
+  .dashboard-layout__overlay,
+  .dashboard-layout__sidebar,
+  .dashboard-layout__header,
+  .price-tag-page__header,
+  .price-tag-page__search-panel,
+  .price-tag-page__preview-heading,
+  .price-tag-page__print-button {
+    display: none !important;
+  }
+
+  /* Flatten all parent containers */
+  body, html, #root,
+  .dashboard-layout,
+  .dashboard-layout__content,
+  .dashboard-layout__main-content,
+  .price-tag-page,
+  .price-tag-page__content,
+  .price-tag-page__preview-panel {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Three horizontal 60×40 mm tags per row; the print engine starts a new page only when needed. */
+  .price-tag-page__tags {
+    display: grid !important;
+    grid-template-columns: repeat(3, 60mm) !important;
+    grid-auto-rows: 40mm !important;
+    align-content: start !important;
+    column-gap: 2mm !important;
+    row-gap: 2mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Horizontal tag, 60x40mm with border */
+  .price-tag-print {
+    width: 60mm !important;
+    height: 40mm !important;
+    margin: 0 !important;
+    border: 1px solid #000 !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

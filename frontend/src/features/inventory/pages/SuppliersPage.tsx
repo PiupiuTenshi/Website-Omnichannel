@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth";
-import { createSupplier, getSuppliers } from "../api/inventoryApi";
+import { createSupplier, getSuppliers, updateSupplier, deleteSupplier } from "../api/inventoryApi";
 import type { Supplier } from "../types/inventoryTypes";
 import "./SuppliersPage.css";
 
@@ -12,12 +12,22 @@ export function SuppliersPage() {
   const [success, setSuccess] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Form states
+  // Form states (Add)
   const [name, setName] = useState("");
   const [contactName, setContactName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+
+  // Form states (Edit)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editContactName, setEditContactName] = useState("");
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!session) return;
@@ -64,6 +74,65 @@ export function SuppliersPage() {
       void loadData();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi lưu nhà cung cấp.");
+    }
+  };
+
+  const startEdit = (s: Supplier) => {
+    setEditingSupplier(s);
+    setEditName(s.name);
+    setEditContactName(s.contactName || "");
+    setEditPhoneNumber(s.phoneNumber || "");
+    setEditEmail(s.email || "");
+    setEditAddress(s.address || "");
+    setEditIsActive(s.isActive);
+    setError("");
+    setSuccess("");
+  };
+
+  const handleUpdateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session || !editingSupplier) return;
+    if (!editName.trim()) {
+      setError("Tên nhà cung cấp bắt buộc phải nhập.");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      setError("");
+      setSuccess("");
+      await updateSupplier(session.accessToken, editingSupplier.supplierId, {
+        name: editName.trim(),
+        contactName: editContactName.trim() || undefined,
+        phoneNumber: editPhoneNumber.trim() || undefined,
+        email: editEmail.trim() || undefined,
+        address: editAddress.trim() || undefined,
+        isActive: editIsActive
+      });
+      setSuccess(`Cập nhật nhà cung cấp "${editName}" thành công!`);
+      setEditingSupplier(null);
+      void loadData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi cập nhật nhà cung cấp.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteSupplier = async (s: Supplier) => {
+    if (!session) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn ngắt kết nối (xóa mềm) nhà cung cấp "${s.name}"?`)) {
+      return;
+    }
+
+    try {
+      setError("");
+      setSuccess("");
+      await deleteSupplier(session.accessToken, s.supplierId);
+      setSuccess(`Đã ngắt kết nối (xóa mềm) nhà cung cấp "${s.name}" thành công.`);
+      void loadData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi xóa nhà cung cấp.");
     }
   };
 
@@ -180,6 +249,7 @@ export function SuppliersPage() {
                       <th>Email</th>
                       <th>Địa chỉ</th>
                       <th>Trạng thái</th>
+                      <th style={{ textAlign: "right" }}>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -194,6 +264,26 @@ export function SuppliersPage() {
                           <span className={`badge ${s.isActive ? "badge--success" : "badge--danger"}`}>
                             {s.isActive ? "Đang hoạt động" : "Ngừng hợp tác"}
                           </span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="btn btn--sm btn--primary"
+                              onClick={() => startEdit(s)}
+                            >
+                              ✏️ Sửa
+                            </button>
+                            {s.isActive && (
+                              <button
+                                type="button"
+                                className="btn btn--sm btn--danger"
+                                onClick={() => void handleDeleteSupplier(s)}
+                              >
+                                🗑️ Xóa mềm
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -216,11 +306,113 @@ export function SuppliersPage() {
                       <p><strong>Email:</strong> {s.email || "—"}</p>
                       <p><strong>Địa chỉ:</strong> {s.address || "—"}</p>
                     </div>
+                    <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        className="btn btn--sm btn--primary"
+                        onClick={() => startEdit(s)}
+                      >
+                        ✏️ Sửa
+                      </button>
+                      {s.isActive && (
+                        <button
+                          type="button"
+                          className="btn btn--sm btn--danger"
+                          onClick={() => void handleDeleteSupplier(s)}
+                        >
+                          🗑️ Xóa mềm
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Edit Supplier Modal */}
+      {editingSupplier && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal card" style={{ maxWidth: '600px', width: '100%' }}>
+            <h2 className="card__title">Cập nhật nhà cung cấp</h2>
+            <form className="form" onSubmit={handleUpdateSupplier}>
+              <div className="form__grid">
+                <label className="form__field">
+                  <span className="form__label">Tên nhà cung cấp <span className="text-danger">*</span></span>
+                  <input
+                    type="text"
+                    className="form__input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label className="form__field">
+                  <span className="form__label">Người liên hệ</span>
+                  <input
+                    type="text"
+                    className="form__input"
+                    value={editContactName}
+                    onChange={(e) => setEditContactName(e.target.value)}
+                  />
+                </label>
+
+                <label className="form__field">
+                  <span className="form__label">Số điện thoại</span>
+                  <input
+                    type="tel"
+                    className="form__input"
+                    value={editPhoneNumber}
+                    onChange={(e) => setEditPhoneNumber(e.target.value)}
+                  />
+                </label>
+
+                <label className="form__field">
+                  <span className="form__label">Email</span>
+                  <input
+                    type="email"
+                    className="form__input"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                  />
+                </label>
+
+                <label className="form__field form__field--full-width">
+                  <span className="form__label">Địa chỉ</span>
+                  <input
+                    type="text"
+                    className="form__input"
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                  />
+                </label>
+
+                <label className="form__field" style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
+                  <input
+                    type="checkbox"
+                    checked={editIsActive}
+                    onChange={(e) => setEditIsActive(e.target.checked)}
+                  />
+                  <span className="form__label" style={{ marginBottom: 0 }}>Đang hoạt động</span>
+                </label>
+              </div>
+
+              <div className="form__actions" style={{ marginTop: '20px' }}>
+                <button type="submit" className="btn btn--primary" disabled={editLoading}>Lưu thay đổi</button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  onClick={() => setEditingSupplier(null)}
+                  disabled={editLoading}
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </section>

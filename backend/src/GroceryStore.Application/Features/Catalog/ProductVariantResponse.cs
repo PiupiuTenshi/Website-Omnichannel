@@ -8,4 +8,6 @@ public sealed record ProductVariantResponse(
     decimal SellingPrice,
     decimal? CompareAtPrice,
     bool IsActive,
-    string RowVersion);
+    string RowVersion,
+    DateTime? PromotionStartAtUtc = null,
+    DateTime? PromotionEndAtUtc = null);

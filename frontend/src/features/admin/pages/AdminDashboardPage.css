@@ -295,6 +295,7 @@
   padding: 0;
   font-family: inherit;
   font-size: 0.9rem;
+  min-height: auto;
 }
 
 .admin-dashboard__action-link:hover {

@@ -225,6 +225,46 @@
   color: #991b1b;
 }
 
+.audit-logs-page__role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.audit-logs-page__role-badge--admin {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.audit-logs-page__role-badge--manager {
+  background-color: #e0f2fe;
+  color: #075985;
+}
+
+.audit-logs-page__role-badge--seller {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.audit-logs-page__role-badge--system {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.audit-logs-page__role-badge--buyer {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.audit-logs-page__role-badge--guest {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
 .audit-logs-page__empty-state {
   text-align: center;
   padding: var(--space-xl) !important;

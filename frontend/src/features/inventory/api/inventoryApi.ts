@@ -15,6 +15,21 @@ export function createSupplier(accessToken: string, payload: SupplierPayload): P
   });
 }
 
+export function updateSupplier(accessToken: string, supplierId: string, payload: SupplierPayload & { isActive: boolean }): Promise<Supplier> {
+  return requestJson<Supplier>(`/admin/inventory/suppliers/${supplierId}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteSupplier(accessToken: string, supplierId: string): Promise<void> {
+  return requestJson<void>(`/admin/inventory/suppliers/${supplierId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+}
+
 export function getBatches(accessToken: string, productVariantId?: string): Promise<InventoryBatch[]> {
   const parameters = new URLSearchParams();
   if (productVariantId) parameters.set("productVariantId", productVariantId);
@@ -52,6 +67,12 @@ export function getLowStockItems(accessToken: string, minimumAvailableQuantity?:
   const queryString = parameters.toString() ? `?${parameters.toString()}` : "";
 
   return requestJson<LowStockItem[]>(`/admin/inventory/low-stock${queryString}`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+}
+
+export function getVariantStats(accessToken: string, productVariantId: string): Promise<{ productVariantId: string; availableQuantity: number; revenue: number }> {
+  return requestJson<{ productVariantId: string; availableQuantity: number; revenue: number }>(`/admin/inventory/variants/${productVariantId}/stats`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 }

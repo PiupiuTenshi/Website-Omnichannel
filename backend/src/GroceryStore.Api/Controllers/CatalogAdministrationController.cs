@@ -195,7 +195,9 @@ public sealed class CatalogAdministrationController : ControllerBase
                 request.Barcode,
                 request.SellingPrice,
                 request.CompareAtPrice,
-                request.IsActive),
+                request.IsActive,
+                request.PromotionStartAtUtc,
+                request.PromotionEndAtUtc),
             cancellationToken));
     }
 
@@ -211,25 +213,24 @@ public sealed class CatalogAdministrationController : ControllerBase
     }
 
     [HttpPost("products/{productId:guid}/images")]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ProductImageUploadResponse), StatusCodes.Status201Created)]
     public async Task<ActionResult<ProductImageUploadResponse>> UploadProductImageAsync(
         Guid productId,
-        [FromForm] IFormFile? file,
-        [FromForm] int sortOrder,
-        [FromForm] bool isPrimary,
+        [FromForm] UploadProductImageFormRequest request,
         CancellationToken cancellationToken)
     {
-        if (file is null)
+        if (request.File is null)
         {
             return BadRequest("An image file is required.");
         }
 
-        await using var content = file.OpenReadStream();
+        await using var content = request.File.OpenReadStream();
         var response = await productImageService.UploadAsync(
             productId,
-            new ProductImageUpload(productId, file.FileName, file.ContentType, file.Length, content),
-            sortOrder,
-            isPrimary,
+            new ProductImageUpload(productId, request.File.FileName, request.File.ContentType, request.File.Length, content),
+            request.SortOrder,
+            request.IsPrimary,
             cancellationToken);
         return Created(response.Url, response);
     }

@@ -14,6 +14,18 @@ public sealed class OnlineOrdersController(OnlineOrderService onlineOrderService
     public async Task<ActionResult<OnlineOrderResponse>> CheckoutAsync(CheckoutOnlineOrderRequest request, CancellationToken cancellationToken) =>
         Ok(await onlineOrderService.CheckoutAsync(new CheckoutOnlineOrderCommand(GetGuestSessionId(), User.FindFirstValue(ClaimTypes.NameIdentifier), request.RecipientName, request.RecipientPhoneNumber, request.DeliveryAddress, request.PaymentMethod), cancellationToken));
 
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<OnlineOrderResponse>>> GetOrdersAsync(CancellationToken cancellationToken) =>
+        Ok(await onlineOrderService.GetOrdersForManagementAsync(cancellationToken));
+
+    [Authorize]
+    [HttpGet("mine")]
+    public async Task<ActionResult<IReadOnlyList<OnlineOrderResponse>>> GetMyOrdersAsync(CancellationToken cancellationToken) =>
+        Ok(await onlineOrderService.GetOrdersForBuyerAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException(),
+            cancellationToken));
+
     [HttpGet("{onlineOrderId:guid}")]
     public async Task<ActionResult<OnlineOrderResponse>> GetAsync(Guid onlineOrderId, CancellationToken cancellationToken)
     {
@@ -43,6 +55,11 @@ public sealed class OnlineOrdersController(OnlineOrderService onlineOrderService
     [HttpPost("{onlineOrderId:guid}/returned")]
     public async Task<ActionResult<OnlineOrderResponse>> MarkReturnedAsync(Guid onlineOrderId, CancellationToken cancellationToken) =>
         Ok(await onlineOrderService.MarkReturnedAsync(onlineOrderId, cancellationToken));
+
+    [Authorize(Roles = "Admin,Manager")]
+    [HttpPost("{onlineOrderId:guid}/preparing")]
+    public async Task<ActionResult<OnlineOrderResponse>> MarkPreparingAsync(Guid onlineOrderId, CancellationToken cancellationToken) =>
+        Ok(await onlineOrderService.MarkPreparingAsync(onlineOrderId, cancellationToken));
 
     [Authorize(Roles = "Admin,Manager")]
     [HttpPost("{onlineOrderId:guid}/delivering")]

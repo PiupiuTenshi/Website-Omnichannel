@@ -17,14 +17,20 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
             .Include(cart => cart.Items)
             .SingleOrDefaultAsync(cart => cart.UserId == userId && !cart.IsMerged, cancellationToken);
 
-    public Task<CartProduct?> GetActiveProductAsync(Guid productVariantId, CancellationToken cancellationToken) =>
-        (
+    public Task<CartProduct?> GetActiveProductAsync(Guid productVariantId, CancellationToken cancellationToken)
+    {
+        return (
             from variant in context.ProductVariants.AsNoTracking()
             join product in context.Products.AsNoTracking() on variant.ProductId equals product.ProductId
             join unit in context.UnitsOfMeasure.AsNoTracking() on product.UnitOfMeasureId equals unit.UnitOfMeasureId
             where variant.ProductVariantId == productVariantId && variant.IsActive && product.IsActive && unit.IsActive
-            select new CartProduct(product.Name, variant.Name, variant.SellingPrice, unit.Code == "KG")
+            select new CartProduct(
+                product.Name,
+                variant.Name,
+                variant.SellingPrice,
+                unit.Code == "KG")
         ).SingleOrDefaultAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<CartItemSnapshot>> GetSnapshotAsync(ShoppingCart cart, CancellationToken cancellationToken)
     {
@@ -44,7 +50,7 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
                 variant.ProductVariantId,
                 ProductName = product.Name,
                 VariantName = variant.Name,
-                variant.SellingPrice,
+                UnitPrice = variant.SellingPrice,
                 unit.Code
             }
         ).ToListAsync(cancellationToken);
@@ -56,12 +62,44 @@ public sealed class ShoppingCartRepository(ApplicationDbContext context) : IShop
                 product.ProductName,
                 product.VariantName,
                 itemQuantities[product.ProductVariantId],
-                product.SellingPrice,
+                product.UnitPrice,
                 product.Code == "KG"))
             .ToArray();
     }
 
     public Task AddAsync(ShoppingCart cart, CancellationToken cancellationToken) => context.ShoppingCarts.AddAsync(cart, cancellationToken).AsTask();
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) => context.SaveChangesAsync(cancellationToken);
+    public Task AddItemAsync(ShoppingCartItem item, CancellationToken cancellationToken) => context.ShoppingCartItems.AddAsync(item, cancellationToken).AsTask();
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            foreach (var entry in ex.Entries)
+            {
+                if (entry.Entity is ShoppingCart or ShoppingCartItem)
+                {
+                    var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
+                    if (databaseValues == null)
+                    {
+                        entry.State = EntityState.Detached;
+                    }
+                    else
+                    {
+                        entry.OriginalValues.SetValues(databaseValues);
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+    }
 }

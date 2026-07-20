@@ -75,6 +75,55 @@ public sealed class IdentityAccountServiceTests
         Assert.Contains(result.Errors, error => error.Contains("last active administrator", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task CreateUserWithRoleAsync_CreatesPendingAccountFromPhoneAndActivatesOnFirstSignIn()
+    {
+        await using var scope = await CreateScopeAsync();
+        var service = scope.ServiceProvider.GetRequiredService<IdentityAccountService>();
+
+        var createResult = await service.CreateUserWithRoleAsync(
+            null,
+            "0898 087 507",
+            "password1",
+            UserRole.Seller.ToString(),
+            CancellationToken.None);
+
+        Assert.True(createResult.Succeeded);
+        var pendingAccount = await service.FindByLoginAsync(null, "0898087507", CancellationToken.None);
+        Assert.NotNull(pendingAccount);
+        Assert.False(pendingAccount.IsActive);
+        Assert.True(pendingAccount.RequiresInitialActivation);
+        Assert.True(pendingAccount.PhoneNumberConfirmed);
+
+        var activationResult = await service.ActivateOnFirstSignInAsync(pendingAccount.UserId, CancellationToken.None);
+
+        Assert.True(activationResult.Succeeded);
+        var activeAccount = await service.FindByIdAsync(pendingAccount.UserId, CancellationToken.None);
+        Assert.NotNull(activeAccount);
+        Assert.True(activeAccount.IsActive);
+        Assert.False(activeAccount.RequiresInitialActivation);
+    }
+
+    [Fact]
+    public async Task ActivateOnFirstSignInAsync_DoesNotUnlockManuallyLockedAccount()
+    {
+        await using var scope = await CreateScopeAsync();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var service = scope.ServiceProvider.GetRequiredService<IdentityAccountService>();
+        var lockedUser = new ApplicationUser
+        {
+            UserName = "LOCKED@EXAMPLE.COM",
+            Email = "locked@example.com",
+            IsActive = false,
+            RequiresInitialActivation = false
+        };
+        Assert.True((await userManager.CreateAsync(lockedUser, "password1")).Succeeded);
+
+        var result = await service.ActivateOnFirstSignInAsync(lockedUser.Id, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+    }
+
     private static async Task<AsyncServiceScope> CreateScopeAsync()
     {
         var services = new ServiceCollection();

@@ -10,6 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
+    // Avoid the Windows Event Log provider aborting local development when it is
+    // unavailable for the current user account. Console logging still records errors.
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.AddDebug();
     EnvironmentFileConfiguration.AddLocalEnvironmentFile(builder.Configuration, builder.Environment.ContentRootPath);
 }
 
@@ -100,6 +105,8 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
+var isDemoCatalogSeedCommand = args.Contains("--seed-demo-catalog", StringComparer.Ordinal);
+var isDemoCatalogVerifyCommand = args.Contains("--verify-demo-catalog", StringComparer.Ordinal);
 if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdentitySeedCommand)
 {
     try
@@ -119,7 +126,66 @@ if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdenti
     }
 }
 
-if (isDemoIdentitySeedCommand)
+// This maintenance seed mutates data and must be explicitly enabled for a demo environment.
+if (builder.Configuration.GetValue("StartupTasks:SeedProductSuppliers", true))
+{
+try
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var context = scope.ServiceProvider.GetRequiredService<GroceryStore.Persistence.Context.ApplicationDbContext>();
+    var supplier = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Suppliers, s => s.IsActive);
+    if (supplier == null)
+    {
+        supplier = new GroceryStore.Domain.Entities.Supplier("Nhà cung cấp Tổng hợp", "Nguyễn Văn A", "0909090909", "ncc@demo.local", "204 Tô Hiến Thành, Đà Lạt", true);
+        await context.Suppliers.AddAsync(supplier);
+        await context.SaveChangesAsync();
+    }
+
+    var productIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+        System.Linq.Queryable.Select(context.Products, p => p.ProductId)
+    );
+
+    var linkedProductIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+        System.Linq.Queryable.Select(context.ProductSuppliers, ps => ps.ProductId)
+    );
+
+    var unlinkedProductIds = productIds.Except(linkedProductIds).ToList();
+
+    if (unlinkedProductIds.Count > 0)
+    {
+        foreach (var productId in unlinkedProductIds)
+        {
+            await context.ProductSuppliers.AddAsync(
+                new GroceryStore.Domain.Entities.ProductSupplier(productId, supplier.SupplierId, "PROD-" + productId.ToString().Substring(0, 8).ToUpper(), true)
+            );
+        }
+        await context.SaveChangesAsync();
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "An error occurred while seeding product suppliers.");
+}
+}
+
+if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var demoCatalogSeeder = scope.ServiceProvider.GetRequiredService<DemoCatalogSeeder>();
+    if (isDemoCatalogSeedCommand)
+    {
+        await demoCatalogSeeder.SeedAsync(CancellationToken.None);
+    }
+
+    if (isDemoCatalogVerifyCommand)
+    {
+        var summary = await demoCatalogSeeder.GetSummaryAsync(CancellationToken.None);
+        Console.WriteLine($"Demo catalog summary: categories={summary.Categories}, units={summary.Units}, suppliers={summary.Suppliers}, products={summary.Products}, variants={summary.Variants}, inventoryBatches={summary.InventoryBatches}, users={summary.Users}");
+    }
+}
+
+if (isDemoIdentitySeedCommand || isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand)
 {
     return;
 }

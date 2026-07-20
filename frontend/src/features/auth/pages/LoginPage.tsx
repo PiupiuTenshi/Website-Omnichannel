@@ -19,7 +19,7 @@ export function LoginPage() {
     setErrorMessage("");
 
     if (!identifier.trim() || !password) {
-      setErrorMessage("Enter your email or phone number and password.");
+      setErrorMessage("Vui lòng nhập email hoặc số điện thoại và mật khẩu.");
       return;
     }
 
@@ -31,7 +31,7 @@ export function LoginPage() {
         : "/";
       navigate(from, { replace: true });
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "Unable to sign in right now.");
+      setErrorMessage(error instanceof ApiError ? error.message : "Không thể đăng nhập vào lúc này.");
     } finally {
       setIsSubmitting(false);
     }
@@ -41,22 +41,23 @@ export function LoginPage() {
     <section className="auth-page app-container" aria-labelledby="login-heading">
       <div className="auth-card">
         <header className="auth-card__header">
-          <h1 className="auth-card__title" id="login-heading">Sign in</h1>
-          <p className="auth-card__description">Use your verified email address or phone number.</p>
+          <h1 className="auth-card__title" id="login-heading">Đăng nhập</h1>
+          <p className="auth-card__description">Sử dụng địa chỉ email hoặc số điện thoại đã xác thực của bạn.</p>
         </header>
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label className="auth-form__field" htmlFor="login-identifier">
-            <span>Email or phone number</span>
+            <span>Email hoặc số điện thoại</span>
             <input className="auth-form__input" id="login-identifier" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" />
           </label>
           <label className="auth-form__field" htmlFor="login-password">
-            <span>Password</span>
+            <span>Mật khẩu</span>
             <input className="auth-form__input" id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
           </label>
+          <Link className="auth-card__forgot-link" to="/forgot-password">Quên mật khẩu?</Link>
           {errorMessage && <p className="auth-form__message" role="alert">{errorMessage}</p>}
-          <button className="auth-form__submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Signing in…" : "Sign in"}</button>
+          <button className="auth-form__submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}</button>
         </form>
-        <p className="auth-card__footer">Need an account? <Link to="/register">Register now</Link>.</p>
+        <p className="auth-card__footer">Nếu chưa có tài khoản, <Link to="/register">đăng ký ngay</Link>.</p>
       </div>
     </section>
   );

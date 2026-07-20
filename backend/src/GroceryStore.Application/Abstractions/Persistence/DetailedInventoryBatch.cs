@@ -17,4 +17,6 @@ public sealed record DetailedInventoryBatch(
     string VariantName,
     string Sku,
     string UnitCode,
-    string SupplierName);
+    string SupplierName,
+    decimal SellingPrice,
+    decimal? CompareAtPrice);

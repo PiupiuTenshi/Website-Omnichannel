@@ -14,6 +14,8 @@ public interface IShoppingCartRepository
 
     Task AddAsync(ShoppingCart cart, CancellationToken cancellationToken);
 
+    Task AddItemAsync(ShoppingCartItem item, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
 

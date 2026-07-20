@@ -43,3 +43,17 @@ export function confirmPhone(userId: string, code: string): Promise<void> {
     body: JSON.stringify({ userId, code: code.trim() })
   });
 }
+
+export function requestPasswordReset(identifier: string, resetUrl: string): Promise<void> {
+  return requestJson<void>("/auth/password-resets", {
+    method: "POST",
+    body: JSON.stringify({ identifier: identifier.trim(), resetUrl })
+  });
+}
+
+export function resetPassword(userId: string, token: string, newPassword: string): Promise<void> {
+  return requestJson<void>("/auth/password-resets/confirm", {
+    method: "POST",
+    body: JSON.stringify({ userId, token, newPassword })
+  });
+}
