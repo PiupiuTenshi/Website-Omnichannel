@@ -250,6 +250,7 @@
   border: none;
   cursor: pointer;
   min-width: 4rem;
+  flex-shrink: 0;
 }
 
 .cat-circle {
