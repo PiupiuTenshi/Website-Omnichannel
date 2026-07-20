@@ -269,13 +269,15 @@ export function InventoryReceivePage() {
       } else {
         const mockProduct: ProductListItem = {
           productId: "",
+          productVariantId: matched.productVariantId,
           name: matched.productName,
           slug: "",
           categoryName: "Quét mã nhanh",
           unitName: matched.unitCode,
           sellingPrice: matched.price,
           compareAtPrice: null,
-          primaryImageUrl: null
+          primaryImageUrl: null,
+          isWeighed: matched.isWeighed
         };
 
         const mockVariant: ProductVariant = {
