@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { getCategories, getProducts, searchSuggestions } from "../api/catalogApi";
+import { getImageUrl } from "../../../shared/api/apiClient";
 import { ProductCard } from "../components/ProductCard";
 import type { Category, PagedResponse, ProductListItem } from "../types/catalogTypes";
 import type { StoreSettings } from "../../admin/types/storeSettingsTypes";
@@ -95,6 +96,16 @@ export function CatalogPage() {
     }, 1000);
     return () => clearInterval(intervalId);
   }, [timeLeft]);
+
+  useEffect(() => {
+    if (timeLeft > 0 || promotions.length === 0) return;
+
+    // Hide a just-ended campaign immediately, then refresh regular prices.
+    setPromotions([]);
+    void getProducts(search, categoryId, page)
+      .then(setProducts)
+      .catch(() => setError("Không thể cập nhật giá sản phẩm."));
+  }, [categoryId, page, promotions.length, search, timeLeft]);
 
   const formatTime = (ms: number) => {
     if (ms <= 0) return "Đã kết thúc";
@@ -226,7 +237,7 @@ export function CatalogPage() {
                     >
                       <div className="suggestion-item__img">
                         {item.primaryImageUrl ? (
-                          <img src={item.primaryImageUrl} alt="" loading="lazy" />
+                          <img src={getImageUrl(item.primaryImageUrl)} alt="" loading="lazy" />
                         ) : (
                           <span className="suggestion-item__placeholder">📦</span>
                         )}

@@ -1,4 +1,5 @@
 using GroceryStore.Application;
+using GroceryStore.Api.BackgroundServices;
 using GroceryStore.Api.Configuration;
 using GroceryStore.Api.Middlewares;
 using GroceryStore.Infrastructure;
@@ -47,6 +48,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddHealthChecks();
+builder.Services.AddHostedService<ExpiredPromotionCleanupService>();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddSwaggerGen(options =>

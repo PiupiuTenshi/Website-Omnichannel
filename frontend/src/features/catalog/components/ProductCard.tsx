@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "../../cart";
 import { getProductBySlug } from "../api/catalogApi";
+import { getImageUrl } from "../../../shared/api/apiClient";
 import type { ProductListItem } from "../types/catalogTypes";
 import "./ProductCard.css";
 
@@ -37,7 +38,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="product-card__image-container">
         <Link className="product-card__image-link" to={`/products/${product.slug}`} aria-label={`Xem ${product.name}`}>
           {product.primaryImageUrl ? (
-            <img className="product-card__image" src={product.primaryImageUrl} alt="" loading="lazy" />
+            <img className="product-card__image" src={getImageUrl(product.primaryImageUrl)} alt="" loading="lazy" />
           ) : (
             <div className="product-card__placeholder" aria-hidden="true">
               <svg className="product-card__placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
