@@ -1,0 +1,303 @@
+.product-detail-page {
+  padding-block: var(--space-lg);
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-primary);
+}
+
+.breadcrumbs .separator {
+  color: var(--color-border);
+}
+
+.breadcrumbs .current-item {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.product-detail {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .product-detail {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+
+.product-detail__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.product-detail__image-container {
+  position: relative;
+  aspect-ratio: 4/3;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-detail__main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-bounce);
+}
+
+.product-detail__image-container:hover .product-detail__main-img {
+  transform: scale(1.03);
+}
+
+.product-detail__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-muted);
+}
+
+.product-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  align-self: start;
+}
+
+.product-detail__cat-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary-strong);
+  background: var(--color-primary-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-xs);
+  width: fit-content;
+}
+
+.product-detail__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.product-detail__price-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-detail__price {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--color-primary-strong);
+}
+
+.price-unit {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.product-detail__description h3,
+.product-detail__variants h3,
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+  display: block;
+}
+
+.product-detail__description p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.variant-pills {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.variant-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  min-width: 7rem;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.variant-pill:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-muted);
+}
+
+.variant-pill.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.variant-pill__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.variant-pill__price {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.variant-pill.active .variant-pill__price {
+  color: var(--color-primary-strong);
+}
+
+.product-detail__purchase-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  overflow: hidden;
+  max-width: fit-content;
+}
+
+.qty-btn {
+  background: transparent;
+  border: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.qty-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.quantity-selector span {
+  width: 3rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.product-detail__add-button {
+  width: 100%;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.product-detail__add-button:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.product-detail__commitments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+.commitment-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+}
+
+.commitment-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
+  display: block;
+}
+
+.commitment-card h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.commitment-card p {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
