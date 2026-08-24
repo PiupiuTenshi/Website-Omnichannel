@@ -1,0 +1,11 @@
+export type UserRole = 'Admin' | 'Manager' | 'Seller' | 'Buyer';
+export interface Category { categoryId: string; name: string; slug: string; parentCategoryId: string | null; sortOrder: number; isActive: boolean; }
+export interface ProductListItem { productId: string; name: string; slug: string; categoryName: string; unitName: string; sellingPrice: number; compareAtPrice: number | null; primaryImageUrl: string | null; promotionStartAtUtc?: string | null; promotionEndAtUtc?: string | null; }
+export interface ProductVariant { productVariantId: string; name: string; sku: string; barcode: string | null; sellingPrice: number; compareAtPrice: number | null; isActive: boolean; rowVersion: string; }
+export interface ProductDetail extends ProductListItem { description: string | null; categoryId: string; unitOfMeasureId: string; allowsDecimal: boolean; decimalScale: number; isActive: boolean; variants: ProductVariant[]; images: { productImageId: string; url: string; isPrimary: boolean }[]; }
+export interface PagedResponse<T> { items: T[]; page: number; pageSize: number; totalCount: number; }
+export interface CartItem { productVariantId: string; name: string; variantName: string; quantity: number; unitPrice: number; lineTotal: number; isWeighed: boolean; }
+export interface Cart { shoppingCartId: string; items: CartItem[]; subtotal: number; }
+export interface AuthSession { accessToken: string; accessTokenExpiresAtUtc: string; refreshToken: string; refreshTokenExpiresAtUtc: string; roles: UserRole[]; }
+export interface OnlineOrder { onlineOrderId: string; orderCode: string; status: string; paymentStatus: string; subtotal: number; shippingFee: number | null; total: number; distanceKm: number | null; managerMessage: string | null; createdAtUtc: string; recipientName: string; recipientPhoneNumber: string; deliveryAddress: string; paymentMethod: string; }
+export interface ReportingDashboard { revenue: { date: string; revenue: number }[]; bestSellers: { productName: string; variantName: string; quantitySold: number; revenue: number }[]; slowSellers: { productName: string; variantName: string; quantitySold: number; revenue: number }[]; lowStock: unknown[]; expiringSoon: unknown[]; }
