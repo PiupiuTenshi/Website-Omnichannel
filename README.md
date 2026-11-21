@@ -13,7 +13,14 @@ Hệ thống quản lý bán hàng Omnichannel toàn diện dành cho cửa hàn
 
 **[Mở website Omnichannel](https://website-omnichannel.pages.dev/)**
 
-Nhà tuyển dụng có thể mở trang chủ, tìm kiếm sản phẩm và xem chi tiết sản phẩm ngay trên trình duyệt. Để trải nghiệm đầy đủ vai trò khách hàng, nhân viên bán hàng, quản lý và quản trị viên với dữ liệu mẫu, chạy dự án với database test theo hướng dẫn bên dưới.
+**[Đăng nhập bản demo dành cho nhà tuyển dụng](https://website-omnichannel.pages.dev/demo)**
+
+| Tài khoản demo | Thông tin đăng nhập |
+| --- | --- |
+| Email | `demo@omnichannel.example` |
+| Mật khẩu | `OmnichannelDemo2026!` |
+
+Sau khi đăng nhập, bạn có thể tìm sản phẩm, thêm vào giỏ và đặt một đơn mẫu. Giỏ hàng và đơn thử chỉ tồn tại trong tab hiện tại. Để thử các vai trò nhân viên bán hàng, quản lý và quản trị viên, chạy dự án với database test theo hướng dẫn bên dưới.
 
 ---
 

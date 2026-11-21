@@ -57,7 +57,7 @@ export function LoginPage() {
           {errorMessage && <p className="auth-form__message" role="alert">{errorMessage}</p>}
           <button className="auth-form__submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}</button>
         </form>
-        <p className="auth-card__footer">Nếu chưa có tài khoản, <Link to="/register">đăng ký ngay</Link>.</p>
+        <p className="auth-card__footer">Nếu chưa có tài khoản, <Link to="/register">đăng ký ngay</Link> hoặc <Link to="/demo">dùng tài khoản demo</Link>.</p>
       </div>
     </section>
   );

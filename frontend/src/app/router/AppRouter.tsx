@@ -1,9 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
 import { StoreSettingsPage, AdminDashboardPage, ManagerDashboardPage, SellerDashboardPage, AuditLogsPage, ReportsPage, UserManagementPage, AdminOrdersPage, PromotionsPage } from "../../features/admin";
-import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
+import { AuthProvider, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, RoleRouteGuard, VerifyAccountPage } from "../../features/auth";
 import { AccountPage } from "../../features/account";
 import { CatalogPage, ProductDetailPage, ProductFormPage, AdminProductsPage } from "../../features/catalog";
-import { CartPage } from "../../features/cart";
+import { CartPage, CartProvider } from "../../features/cart";
 import { CheckoutPage } from "../../features/checkout";
 import { OrderTrackingPage } from "../../features/orders";
 import { InventoryBatchesPage, InventoryReceivePage, LowStockPage, SuppliersPage } from "../../features/inventory";
@@ -12,8 +13,9 @@ import { PublicLayout } from "../../layouts/PublicLayout";
 import { DashboardLayout } from "../../layouts/DashboardLayout";
 import { FoundationPage } from "../../pages/FoundationPage";
 import { NotFoundPage } from "../../pages/NotFoundPage";
+import { DemoPage } from "../../pages/DemoPage";
 
-const router = createBrowserRouter([
+const storefrontRoutes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
@@ -81,6 +83,20 @@ const router = createBrowserRouter([
         ]
       }
     ]
+  }
+];
+
+const router = createBrowserRouter([
+  { path: "demo", element: <DemoPage /> },
+  {
+    element: (
+      <AuthProvider>
+        <CartProvider>
+          <Outlet />
+        </CartProvider>
+      </AuthProvider>
+    ),
+    children: storefrontRoutes
   }
 ]);
 
