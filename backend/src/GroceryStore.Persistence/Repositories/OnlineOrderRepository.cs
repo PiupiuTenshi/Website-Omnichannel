@@ -26,6 +26,27 @@ public sealed class OnlineOrderRepository(ApplicationDbContext context) : IOnlin
         }
     }
 
+    public async Task ReleaseAllocationsAsync(OnlineOrder order, DateTime releasedAtUtc, CancellationToken cancellationToken)
+    {
+        var allocations = await context.OnlineOrderAllocations
+            .Where(allocation => allocation.OnlineOrderId == order.OnlineOrderId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var allocation in allocations)
+        {
+            var batch = await context.InventoryBatches.SingleOrDefaultAsync(candidate => candidate.InventoryBatchId == allocation.InventoryBatchId, cancellationToken)
+                ?? throw new InvalidOperationException("Allocated inventory batch was not found.");
+            batch.Adjust(allocation.Quantity);
+            await context.InventoryTransactions.AddAsync(new InventoryTransaction(
+                allocation.InventoryBatchId,
+                order.Items.Single(item => item.OnlineOrderItemId == allocation.OnlineOrderItemId).ProductVariantId,
+                GroceryStore.Domain.Enums.InventoryTransactionType.OnlineOrderCancellationRelease,
+                allocation.Quantity,
+                $"Cancelled online order {order.OrderCode} inventory released",
+                releasedAtUtc), cancellationToken);
+        }
+    }
+
     public Task<OnlineOrder?> GetAccessibleAsync(Guid onlineOrderId, string guestSessionId, string? buyerUserId, CancellationToken cancellationToken) =>
         context.OnlineOrders.Include(order => order.Items).SingleOrDefaultAsync(order =>
             order.OnlineOrderId == onlineOrderId &&

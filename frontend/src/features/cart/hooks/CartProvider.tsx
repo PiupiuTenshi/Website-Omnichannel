@@ -47,7 +47,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => ({
     cart,
-    itemCount: cart?.items.length ?? 0,
+    itemCount: cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0,
     addItem,
     updateItem,
     removeItem,
@@ -56,3 +56,4 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
+

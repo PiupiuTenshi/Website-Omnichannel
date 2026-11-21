@@ -20,12 +20,12 @@ export function ProductCard({ product }: ProductCardProps) {
     setIsAdding(true);
     setAddError("");
     try {
-      const detail = await getProductBySlug(product.slug);
-      const variant = detail.variants.find((candidate) => candidate.isActive);
-      if (variant === undefined) {
-        throw new Error("Product has no active variant.");
+      const productVariantId = product.productVariantId || await getProductBySlug(product.slug)
+        .then((detail) => detail.variants.find((variant) => variant.isActive)?.productVariantId);
+      if (!productVariantId) {
+        throw new Error("The product does not have an active variant.");
       }
-      await addItem(variant.productVariantId, detail.allowsDecimal ? 0.1 : 1);
+      await addItem(productVariantId, product.isWeighed ? 0.1 : 1);
     } catch {
       setAddError("Không thể thêm sản phẩm vào giỏ hàng.");
     } finally {

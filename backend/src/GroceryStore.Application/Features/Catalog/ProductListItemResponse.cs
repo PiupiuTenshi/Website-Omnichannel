@@ -2,6 +2,7 @@ namespace GroceryStore.Application.Features.Catalog;
 
 public sealed record ProductListItemResponse(
     Guid ProductId,
+    Guid ProductVariantId,
     string Name,
     string Slug,
     string CategoryName,
@@ -9,5 +10,6 @@ public sealed record ProductListItemResponse(
     decimal SellingPrice,
     decimal? CompareAtPrice,
     string? PrimaryImageUrl,
-    DateTime? PromotionStartAtUtc = null,
-    DateTime? PromotionEndAtUtc = null);
+    bool IsWeighed,
+    DateTime? PromotionStartAtUtc,
+    DateTime? PromotionEndAtUtc);

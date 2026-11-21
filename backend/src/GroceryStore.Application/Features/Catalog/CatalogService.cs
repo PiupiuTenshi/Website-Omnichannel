@@ -457,6 +457,7 @@ public sealed class CatalogService
             : variant.SellingPrice;
         return new ProductListItemResponse(
             product.ProductId,
+            variant.ProductVariantId,
             product.Name,
             product.Slug,
             product.Category?.Name ?? string.Empty,
@@ -464,6 +465,7 @@ public sealed class CatalogService
             sellingPrice,
             hasCurrentPromotion ? variant.CompareAtPrice : applyPromotionSchedule ? null : variant.CompareAtPrice,
             primaryImage is null ? null : GetImageUrl(primaryImage),
+            product.UnitOfMeasure?.AllowsDecimal ?? false,
             hasCurrentPromotion ? variant.PromotionStartAtUtc : null,
             hasCurrentPromotion ? variant.PromotionEndAtUtc : null);
     }

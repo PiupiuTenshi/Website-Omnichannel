@@ -45,6 +45,22 @@ public sealed class ShoppingCartServiceTests
     }
 
     [Fact]
+    public async Task UserCart_IsSeparateFromGuestCartAsync()
+    {
+        var productVariantId = Guid.NewGuid();
+        var repository = new InMemoryShoppingCartRepository(productVariantId, new CartProduct("Rice", "5 kg bag", 125000m, false));
+        var service = new ShoppingCartService(repository);
+
+        await service.SetGuestItemAsync("guest-a", new SetCartItemCommand(productVariantId, 1m), CancellationToken.None);
+        var userCart = await service.SetUserItemAsync("buyer-1", new SetCartItemCommand(productVariantId, 2m), CancellationToken.None);
+        var guestCart = await service.GetGuestCartAsync("guest-a", CancellationToken.None);
+
+        Assert.Equal(2m, userCart.Items.Single().Quantity);
+        Assert.Equal(1m, guestCart.Items.Single().Quantity);
+        Assert.NotEqual(userCart.ShoppingCartId, guestCart.ShoppingCartId);
+    }
+
+    [Fact]
     public async Task SetGuestItem_RejectsInvalidWeighedQuantityAsync()
     {
         var productVariantId = Guid.NewGuid();

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { reserveCart } from "../api/cartApi";
 import { useCart } from "../hooks/useCart";
 import "./CartPage.css";
 
@@ -26,10 +27,12 @@ function getPortionDetails(quantity: number) {
 export function CartPage() {
   const { cart, removeItem: removeCartItem, updateItem: setCartItem } = useCart();
   const [error, setError] = useState("");
+  const [reservationMessage, setReservationMessage] = useState("");
 
   async function updateQuantity(productVariantId: string, quantity: number) {
     try {
       await setCartItem(productVariantId, quantity);
+      setReservationMessage("");
     } catch {
       setError("Không thể cập nhật số lượng.");
     }
@@ -38,8 +41,18 @@ export function CartPage() {
   async function removeItem(productVariantId: string) {
     try {
       await removeCartItem(productVariantId);
+      setReservationMessage("");
     } catch {
       setError("Không thể xóa sản phẩm.");
+    }
+  }
+
+  async function reserveInventory() {
+    try {
+      const reservation = await reserveCart();
+      setReservationMessage(`Tồn kho được giữ đến ${new Intl.DateTimeFormat("vi-VN", { timeStyle: "short" }).format(new Date(reservation.expiresAtUtc))}.`);
+    } catch {
+      setError("Không thể giữ tồn kho. Vui lòng kiểm tra lại sản phẩm.");
     }
   }
 
@@ -54,6 +67,7 @@ export function CartPage() {
         <p>Giá và tồn kho chỉ được giữ trong lúc hệ thống tạo đơn thanh toán.</p>
       </header>
       {error ? <p className="cart-page__error" role="alert">{error}</p> : null}
+      {reservationMessage ? <p className="cart-page__reservation" role="status">{reservationMessage}</p> : null}
       {cart.items.length === 0 ? (
         <p>Giỏ hàng của bạn đang trống. <Link to="/">Tiếp tục mua sắm</Link>.</p>
       ) : (
@@ -91,6 +105,7 @@ export function CartPage() {
           </ul>
           <footer className="cart-page__summary">
             <strong>Tạm tính: {currencyFormatter.format(cart.subtotal)}</strong>
+            <button type="button" onClick={() => void reserveInventory()}>Giữ tồn kho 10 phút</button>
             <div className="cart-page__actions">
               <Link className="cart-page__checkout-link" to="/checkout">Tiếp tục thanh toán</Link>
             </div>

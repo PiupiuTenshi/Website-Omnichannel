@@ -24,6 +24,20 @@ public sealed class RefreshSessionStore : IRefreshSessionStore
         return applicationDbContext.RefreshSessions.SingleOrDefaultAsync(session => session.TokenHash == tokenHash, cancellationToken);
     }
 
+    public async Task<int> RevokeActiveForUserAsync(string userId, DateTime revokedAtUtc, CancellationToken cancellationToken)
+    {
+        var sessions = await applicationDbContext.RefreshSessions
+            .Where(session => session.UserId == userId && session.RevokedAtUtc == null && session.ExpiresAtUtc > revokedAtUtc)
+            .ToArrayAsync(cancellationToken);
+
+        foreach (var session in sessions)
+        {
+            session.Revoke(revokedAtUtc);
+        }
+
+        return sessions.Length;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return applicationDbContext.SaveChangesAsync(cancellationToken);

@@ -95,6 +95,12 @@ public sealed class ShoppingCartService(IShoppingCartRepository shoppingCartRepo
     public Task<ShoppingCartResponse> RemoveGuestItemAsync(string sessionId, Guid productVariantId, CancellationToken cancellationToken) =>
         RemoveItemAsync(sessionId, null, productVariantId, cancellationToken);
 
+    public Task<ShoppingCartResponse> SetUserItemAsync(string userId, SetCartItemCommand command, CancellationToken cancellationToken) =>
+        SetItemAsync(null, userId, command, cancellationToken);
+
+    public Task<ShoppingCartResponse> RemoveUserItemAsync(string userId, Guid productVariantId, CancellationToken cancellationToken) =>
+        RemoveItemAsync(null, userId, productVariantId, cancellationToken);
+
     public async Task<ShoppingCartResponse> MergeGuestCartAsync(string sessionId, string userId, CancellationToken cancellationToken)
     {
         var guestCart = await shoppingCartRepository.GetGuestCartAsync(NormalizeSessionId(sessionId), cancellationToken);
