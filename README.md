@@ -9,6 +9,12 @@
 
 Hệ thống quản lý bán hàng Omnichannel toàn diện dành cho cửa hàng tạp hóa, tích hợp 3 phân hệ chính: **Website bán hàng E-Commerce**, **Phân hệ bán quầy POS**, và **Hệ thống Quản trị & Vận hành (Store Management)**.
 
+## Xem bản demo trực tuyến
+
+**[Mở website Omnichannel](https://website-omnichannel.pages.dev/)**
+
+Nhà tuyển dụng có thể mở trang chủ, tìm kiếm sản phẩm và xem chi tiết sản phẩm ngay trên trình duyệt. Để trải nghiệm đầy đủ vai trò khách hàng, nhân viên bán hàng, quản lý và quản trị viên với dữ liệu mẫu, chạy dự án với database test theo hướng dẫn bên dưới.
+
 ---
 
 ## 🌟 Chức năng nổi bật
@@ -101,7 +107,7 @@ webShop/
 ## 🛠️ Môi trường & Yêu cầu Hệ thống
 
 - **.NET SDK**: 10.0+
-- **Node.js**: 20.0+ & **npm**: 10+
+- **Node.js**: 22.12+ & **npm**: 10+
 - **Database**: SQL Server (SQL Express, LocalDB, Docker SQL Server hoặc Azure SQL)
 - **Dịch vụ tích hợp (Tùy chọn cho Dev)**:
   - Tài khoản **Goong Maps API Key** (dùng để tính khoảng cách và phí ship).
@@ -111,47 +117,51 @@ webShop/
 
 ## 🚀 Hướng dẫn Chạy Local (Development)
 
-### Step 1: Thiết lập Biến môi trường
-Tạo file `.env.local` ở thư mục gốc project (copy từ `.env.example`):
+### Bước 1. Cấu hình database test và biến môi trường
+
+Trong PowerShell tại thư mục gốc, sao chép `.env.example` thành `.env.local` nếu chưa có file này.
 
 ```powershell
-cp .env.example .env.local
+if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 ```
 
-Cập nhật các chuỗi kết nối và thông số cấu hình chính trong `.env.local`:
-- `ConnectionStrings__DefaultConnection`: Chuỗi kết nối SQL Server local của bạn.
-- `Jwt__Key`: Chuỗi bảo mật JWT (tối thiểu 32 ký tự).
-- `VITE_API_BASE_URL`: URL API Backend (Mặc định local: `http://localhost:5261/api`).
+Mẫu `.env.example` dùng database SQL Server cục bộ **`WebsiteOmnichannelDemo`** và gửi email mô phỏng. Nếu dùng SQL Server Express hoặc instance khác, thay `Server=localhost` bằng tên instance của bạn. Đặt `Jwt__Key` riêng dài ít nhất 32 ký tự. Nếu muốn thử đăng nhập theo vai trò, đặt mật khẩu riêng cho từng `DemoIdentity__Accounts__*__Password` trong `.env.local`. Dùng các tài khoản mẫu này trong database test trên máy của bạn.
 
-### Step 2: Khởi tạo Database & Seed Dữ liệu Demo
-Mở terminal tại thư mục gốc và chạy các lệnh seed database:
+### Bước 2. Tạo schema và nạp dữ liệu mẫu
+
+Đặt biến môi trường cho EF Core bằng cùng chuỗi kết nối database test trong `.env.local`, rồi chạy migration trước khi seed. Các lệnh dưới đây dùng SQL Server local và xác thực Windows.
 
 ```powershell
-# Chạy migration & seed danh mục, sản phẩm, tài khoản mặc định
-dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-identities --seed-demo-catalog
+$env:ConnectionStrings__DefaultConnection = 'Server=localhost;Database=WebsiteOmnichannelDemo;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False'
+dotnet tool restore
+dotnet tool run dotnet-ef database update --project backend/src/GroceryStore.Persistence --startup-project backend/src/GroceryStore.Api
 
-# Seed hình ảnh demo sản phẩm (local storage)
+dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-catalog
 dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-images
-
-# Kiểm tra xác minh dữ liệu catalog đã seed
 dotnet run --project backend/src/GroceryStore.Api -- --verify-demo-catalog
 ```
 
-### Step 3: Khởi chạy Backend API (.NET 10)
+Nếu cần thử các màn hình theo vai trò, chạy thêm `dotnet run --project backend/src/GroceryStore.Api -- --seed-demo-identities` sau khi đặt mật khẩu trong `.env.local`.
+
+### Bước 3. Khởi chạy API
+
 ```powershell
 dotnet run --project backend/src/GroceryStore.Api
 ```
-- API Swagger UI / Health check: `http://localhost:5261/health` hoặc `http://localhost:5261/swagger`.
 
-### Step 4: Khởi chạy Frontend (React + Vite)
-Mở một terminal khác:
+Mở [Swagger](http://localhost:5261/swagger) để xem API hoặc [kiểm tra kết nối database](http://localhost:5261/health/ready).
+
+### Bước 4. Khởi chạy giao diện
+
+Để chạy giao diện React như bản demo trực tuyến, mở một terminal khác.
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
-- Giao diện Web chạy tại: `http://localhost:5173`.
+
+Mở [giao diện React](http://localhost:5173). Nếu muốn thử Angular, chạy `npm ci` và `npm start` trong `angular-client` rồi mở [giao diện Angular](http://localhost:4200).
 
 ---
 
@@ -213,6 +223,8 @@ Repository đã có sẵn `Dockerfile` ở thư mục gốc:
 4. Nếu lưu ảnh bằng filesystem, sao lưu ảnh hiện có trước khi đổi `ImageStorage__LocalRootPath`. Gắn ổ đĩa lưu trữ vào `/var/data`, chép ảnh cũ sang `/var/data/product-images`, rồi kiểm tra cả ảnh cũ và ảnh mới sau khi triển khai.
 
 ### 2. Frontend Angular (Cloudflare Workers)
+
+Tên Worker là `omnichannel`. Wrangler in ra địa chỉ theo dạng `omnichannel.<subdomain-tài-khoản>.workers.dev` sau khi triển khai.
 
 Từ thư mục gốc của repo, chạy các lệnh sau với Node.js 22.12 trở lên và tài khoản Cloudflare đã đăng nhập Wrangler.
 
