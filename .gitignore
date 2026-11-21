@@ -35,6 +35,7 @@ Thumbs.db
 # Upload/temp/backup
 uploads/
 tmp/
+/.worktrees/
 *.bak
 *.publishSettings
 publish/

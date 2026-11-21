@@ -1,11 +1,13 @@
 using GroceryStore.Application;
 using GroceryStore.Api.BackgroundServices;
 using GroceryStore.Api.Configuration;
+using GroceryStore.Api.Health;
 using GroceryStore.Api.Middlewares;
 using GroceryStore.Infrastructure;
 using GroceryStore.Persistence;
 using GroceryStore.Persistence.Seeding;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,7 +49,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseReadinessCheck>("database", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
 builder.Services.AddHostedService<ExpiredPromotionCleanupService>();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -104,7 +107,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
 var isDemoCatalogSeedCommand = args.Contains("--seed-demo-catalog", StringComparer.Ordinal);
@@ -130,7 +137,7 @@ if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdenti
 }
 
 // This maintenance seed mutates data and must be explicitly enabled for a demo environment.
-if (builder.Configuration.GetValue("StartupTasks:SeedProductSuppliers", true))
+if (builder.Configuration.GetValue<bool>("StartupTasks:SeedProductSuppliers"))
 {
 try
 {

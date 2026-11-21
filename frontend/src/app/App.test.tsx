@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
@@ -10,9 +10,17 @@ describe("App", () => {
   it("renders the catalog smoke page", async () => {
     vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
-      const payload = url.includes("/products?")
-        ? { items: [], page: 1, pageSize: 12, totalCount: 0 }
-        : [];
+      const pathname = new URL(url, window.location.origin).pathname;
+      const payloads: Record<string, unknown> = {
+        "/api/products": {
+          items: [{ productId: "apples", name: "Táo", slug: "tao", categoryName: "Trái cây", unitName: "kg", sellingPrice: 10000, compareAtPrice: null, primaryImageUrl: null }],
+          page: 1,
+          pageSize: 12,
+          totalCount: 1,
+        },
+        "/api/cart": { shoppingCartId: "test-cart", items: [], subtotal: 0 },
+      };
+      const payload = payloads[pathname] ?? [];
       return Promise.resolve(new Response(JSON.stringify(payload), { headers: { "Content-Type": "application/json" } }));
     }));
 
@@ -20,6 +28,6 @@ describe("App", () => {
 
     expect(screen.getByRole("link", { name: "🥬 Chợ Xanh" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nông sản sạch & Nhu yếu phẩm tươi ngon mỗi ngày" })).toBeInTheDocument();
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(4));
+    expect(await screen.findByRole("link", { name: "Táo" })).toHaveAttribute("href", "/products/tao");
   });
 });

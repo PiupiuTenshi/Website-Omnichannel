@@ -1,6 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { finalize, Observable, tap } from 'rxjs';
+import { ApiService } from '../core/api.service';
+import { AccountProfile } from '../core/models';
+import { errorMessage } from '../core/api-error';
 
 @Component({
   selector: 'app-utility-page',
@@ -16,6 +20,9 @@ import { FormsModule } from '@angular/forms';
           <p class="auth-card__description">{{ copy() }}</p>
         </div>
 
+        @if (error()) { <p class="auth-form__message" role="alert">{{ error() }}</p> }
+        @if (message()) { <p class="auth-form__message auth-form__message--success" role="status">{{ message() }}</p> }
+
         @switch (kind()) {
           @case ('foundation') {
             <div style="display: grid; gap: 1rem;">
@@ -30,20 +37,20 @@ import { FormsModule } from '@angular/forms';
           }
 
           @case ('account') {
-            <form class="auth-form">
+            <form class="auth-form" (ngSubmit)="saveProfile()">
               <label class="auth-form__field">
                 <span>Họ và tên</span>
-                <input class="auth-form__input" placeholder="Cập nhật họ tên của bạn" />
+                <input class="auth-form__input" name="displayName" [(ngModel)]="displayName" autocomplete="name" />
               </label>
               <label class="auth-form__field">
                 <span>Số điện thoại</span>
-                <input class="auth-form__input" placeholder="0901 234 567" />
+                <input class="auth-form__input" [value]="phoneNumber" type="tel" readonly />
               </label>
               <label class="auth-form__field">
                 <span>Địa chỉ giao hàng mặc định</span>
-                <textarea class="auth-form__input" rows="3" placeholder="Nhập địa chỉ nhận hàng"></textarea>
+                <textarea class="auth-form__input" name="address" [(ngModel)]="address" rows="3" autocomplete="street-address"></textarea>
               </label>
-              <button type="button" class="auth-form__submit hover-lift">Lưu thay đổi hồ sơ</button>
+              <button type="submit" class="auth-form__submit hover-lift" [disabled]="loading() || !profileLoaded()">Lưu thay đổi hồ sơ</button>
             </form>
           }
 
@@ -55,22 +62,59 @@ import { FormsModule } from '@angular/forms';
             </div>
           }
 
-          @default {
-            <form class="auth-form">
+          @case ('forgot') {
+            <form class="auth-form" (ngSubmit)="requestReset()">
               <label class="auth-form__field">
                 <span>Email hoặc Số điện thoại</span>
-                <input class="auth-form__input" type="text" placeholder="Nhập email hoặc SĐT" />
+                <input class="auth-form__input" name="identifier" [(ngModel)]="identifier" autocomplete="username" required />
               </label>
+              <button type="submit" class="auth-form__submit hover-lift" [disabled]="loading() || !identifier.trim()">Gửi yêu cầu</button>
+            </form>
+          }
 
-              @if (kind() === 'reset') {
+          @case ('reset') {
+            @if (completed()) {
+              <a routerLink="/login">Đăng nhập</a>
+            } @else if (!userId || !resetToken) {
+              <a routerLink="/forgot-password">Yêu cầu liên kết mới</a>
+            } @else {
+              <form class="auth-form" (ngSubmit)="resetPassword()">
                 <label class="auth-form__field">
                   <span>Mật khẩu mới</span>
-                  <input class="auth-form__input" type="password" placeholder="••••••••" />
+                  <input class="auth-form__input" name="newPassword" [(ngModel)]="newPassword" type="password" autocomplete="new-password" required minlength="8" />
                 </label>
-              }
+                <label class="auth-form__field">
+                  <span>Xác nhận mật khẩu mới</span>
+                  <input class="auth-form__input" name="confirmPassword" [(ngModel)]="confirmPassword" type="password" autocomplete="new-password" required />
+                </label>
+                <button type="submit" class="auth-form__submit hover-lift" [disabled]="loading()">Đặt lại mật khẩu</button>
+              </form>
+            }
+          }
 
-              <button type="button" class="auth-form__submit hover-lift">{{ button() }}</button>
-            </form>
+          @case ('verify') {
+            @if (completed()) {
+              <a routerLink="/login">Đăng nhập</a>
+            } @else if (userId) {
+              @if (showEmailVerification) {
+                <form class="auth-form" (ngSubmit)="verify('email')">
+                  <label class="auth-form__field">
+                    <span>Mã xác minh email</span>
+                    <input class="auth-form__input" name="emailCode" [(ngModel)]="emailCode" inputmode="numeric" autocomplete="one-time-code" required />
+                  </label>
+                  <button type="submit" class="auth-form__submit" [disabled]="loading() || !emailCode.trim()">Xác minh email</button>
+                </form>
+              }
+              @if (showPhoneVerification) {
+                <form class="auth-form" (ngSubmit)="verify('phone')">
+                  <label class="auth-form__field">
+                    <span>Mã xác minh SMS</span>
+                    <input class="auth-form__input" name="phoneCode" [(ngModel)]="phoneCode" inputmode="numeric" autocomplete="one-time-code" required />
+                  </label>
+                  <button type="submit" class="auth-form__submit" [disabled]="loading() || !phoneCode.trim()">Xác minh số điện thoại</button>
+                </form>
+              }
+            }
           }
         }
 
@@ -81,8 +125,28 @@ import { FormsModule } from '@angular/forms';
     </div>
   `
 })
-export class UtilityPageComponent {
+export class UtilityPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly api = inject(ApiService);
+  private readonly query = this.route.snapshot.queryParamMap;
+
+  readonly userId = this.query.get('userId')?.trim() ?? '';
+  readonly resetToken = this.query.get('token') ?? '';
+  readonly showEmailVerification = this.query.get('email') === '1' || this.query.get('phone') !== '1';
+  readonly showPhoneVerification = this.query.get('phone') === '1' || this.query.get('email') !== '1';
+  readonly error = signal('');
+  readonly message = signal('');
+  readonly completed = signal(false);
+  readonly loading = signal(false);
+  readonly profileLoaded = signal(false);
+  identifier = '';
+  emailCode = '';
+  phoneCode = '';
+  newPassword = '';
+  confirmPassword = '';
+  displayName = '';
+  address = '';
+  phoneNumber = '';
 
   readonly kind = computed(() => String(this.route.snapshot.data['kind'] ?? 'forgot'));
 
@@ -97,10 +161,69 @@ export class UtilityPageComponent {
   readonly copy = computed(() => ({
     foundation: 'Tổng quan hệ thống cửa hàng và quy tắc vận hành.',
     account: 'Cập nhật thông tin liên hệ và địa chỉ giao hàng.',
-    forgot: 'Hướng dẫn khôi phục mật khẩu sẽ được gửi đến email đăng ký.',
+    forgot: 'Yêu cầu gửi hướng dẫn khôi phục đến thông tin liên hệ đã xác minh.',
     reset: 'Nhập mật khẩu mới để hoàn tất khôi phục tài khoản.',
     verify: 'Xác minh email hoặc số điện thoại để kích hoạt đầy đủ quyền.'
   })[this.kind()] ?? 'Đường dẫn không hợp lệ.');
 
-  readonly button = computed(() => this.kind() === 'verify' ? 'Xác minh ngay' : 'Gửi yêu cầu');
+  ngOnInit() {
+    if (this.kind() === 'account') {
+      this.run(this.api.profile().pipe(tap(profile => this.applyProfile(profile))));
+    } else if (this.kind() === 'reset' && (!this.userId || !this.resetToken)) {
+      this.error.set('Liên kết đặt lại mật khẩu không hợp lệ.');
+    } else if (this.kind() === 'verify' && !this.userId) {
+      this.error.set('Liên kết xác minh thiếu thông tin tài khoản. Hãy dùng liên kết sau khi đăng ký.');
+    }
+  }
+
+  requestReset() {
+    if (!this.identifier.trim()) return;
+    const resetUrl = new URL('/reset-password', window.location.origin).href;
+    this.run(this.api.requestPasswordReset(this.identifier.trim(), resetUrl), 'Nếu tài khoản đủ điều kiện, hướng dẫn khôi phục sẽ được gửi.');
+  }
+
+  resetPassword() {
+    if (!this.userId || !this.resetToken) return;
+    if (this.newPassword.length < 8 || this.newPassword !== this.confirmPassword) {
+      this.error.set('Mật khẩu mới phải có ít nhất 8 ký tự và khớp với phần xác nhận.');
+      return;
+    }
+    const request = this.api.resetPassword(this.userId, this.resetToken, this.newPassword).pipe(tap(() => {
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.completed.set(true);
+    }));
+    this.run(request, 'Đã đặt lại mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.');
+  }
+
+  verify(channel: 'email' | 'phone') {
+    const code = (channel === 'email' ? this.emailCode : this.phoneCode).trim();
+    if (!this.userId || !code) return;
+    const request = channel === 'email' ? this.api.confirmEmail(this.userId, code) : this.api.confirmPhone(this.userId, code);
+    this.run(request.pipe(tap(() => this.completed.set(true))), 'Đã xác minh tài khoản. Bạn có thể đăng nhập.');
+  }
+
+  saveProfile() {
+    if (!this.profileLoaded()) return;
+    const request = this.api.updateProfile(this.displayName.trim() || null, this.address.trim() || null);
+    this.run(request.pipe(tap(profile => this.applyProfile(profile))), 'Đã lưu hồ sơ.');
+  }
+
+  private applyProfile(profile: AccountProfile) {
+    this.displayName = profile.displayName ?? '';
+    this.address = profile.defaultDeliveryAddress ?? '';
+    this.phoneNumber = profile.phoneNumber ?? '';
+    this.profileLoaded.set(true);
+  }
+
+  private run(request: Observable<unknown>, successMessage = '') {
+    if (this.loading()) return;
+    this.loading.set(true);
+    this.error.set('');
+    this.message.set('');
+    request.pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: () => this.message.set(successMessage),
+      error: error => this.error.set(errorMessage(error)),
+    });
+  }
 }

@@ -37,7 +37,7 @@ import { CartStore } from '../core/cart.store';
                 <a class="nav-link" routerLink="/seller/dashboard">Bán hàng</a>
               }
               <a class="nav-link" routerLink="/account">Tài khoản</a>
-              <button class="btn-outline hover-lift" (click)="logout()">Đăng xuất</button>
+              <button class="btn-outline hover-lift" (click)="logout()" [disabled]="session.endingSession()">Đăng xuất</button>
             } @else {
               <a class="btn-primary hover-lift" routerLink="/login">Đăng nhập</a>
             }
@@ -47,6 +47,7 @@ import { CartStore } from '../core/cart.store';
 
       <!-- Main Content -->
       <main class="public-layout__main">
+        @if (session.logoutError()) { <p class="auth-form__message" role="alert">{{ session.logoutError() }}</p> }
         <router-outlet />
       </main>
 
@@ -74,8 +75,7 @@ export class PublicLayoutComponent {
   readonly session = inject(SessionService);
   readonly cart = inject(CartStore);
 
-  logout() {
-    this.session.clearSession();
-    this.cart.load();
+  async logout() {
+    if (await this.session.clearSession()) this.cart.load();
   }
 }

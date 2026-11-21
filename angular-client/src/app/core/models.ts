@@ -6,6 +6,9 @@ export interface ProductDetail extends ProductListItem { description: string | n
 export interface PagedResponse<T> { items: T[]; page: number; pageSize: number; totalCount: number; }
 export interface CartItem { productVariantId: string; name: string; variantName: string; quantity: number; unitPrice: number; lineTotal: number; isWeighed: boolean; }
 export interface Cart { shoppingCartId: string; items: CartItem[]; subtotal: number; }
-export interface AuthSession { accessToken: string; accessTokenExpiresAtUtc: string; refreshToken: string; refreshTokenExpiresAtUtc: string; roles: UserRole[]; }
+export interface AuthSession { accessTokenExpiresAtUtc: string; username: string; roles: UserRole[]; }
+export interface DirectAuthResponse { accessToken: string; accessTokenExpiresAtUtc: string; }
+export interface RegistrationResponse { userId: string; requiresEmailVerification: boolean; requiresPhoneVerification: boolean; }
+export interface AccountProfile { displayName: string | null; email: string | null; phoneNumber: string | null; defaultDeliveryAddress: string | null; }
 export interface OnlineOrder { onlineOrderId: string; orderCode: string; status: string; paymentStatus: string; subtotal: number; shippingFee: number | null; total: number; distanceKm: number | null; managerMessage: string | null; createdAtUtc: string; recipientName: string; recipientPhoneNumber: string; deliveryAddress: string; paymentMethod: string; }
 export interface ReportingDashboard { revenue: { date: string; revenue: number }[]; bestSellers: { productName: string; variantName: string; quantitySold: number; revenue: number }[]; slowSellers: { productName: string; variantName: string; quantitySold: number; revenue: number }[]; lowStock: unknown[]; expiringSoon: unknown[]; }

@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { SessionService } from '../core/session.service';
 import { errorMessage } from '../core/api-error';
 
 @Component({
@@ -53,7 +52,6 @@ import { errorMessage } from '../core/api-error';
 })
 export class RegisterPageComponent {
   private readonly api = inject(ApiService);
-  private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
   email = '';
@@ -73,8 +71,14 @@ export class RegisterPageComponent {
 
     this.api.register(this.email, this.phone, this.password).subscribe({
       next: res => {
-        this.session.setSession(res);
-        this.router.navigate(['/']);
+        this.router.navigate(['/verify'], {
+          replaceUrl: true,
+          queryParams: {
+            userId: res.userId,
+            email: res.requiresEmailVerification ? '1' : undefined,
+            phone: res.requiresPhoneVerification ? '1' : undefined,
+          },
+        });
       },
       error: e => {
         this.error.set(errorMessage(e));

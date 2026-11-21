@@ -29,7 +29,14 @@
               "src/app/styles/pages/ManagementPage.css"
             ]
           },
-          "configurations": { "production": { "budgets": [{ "type": "initial", "maximumWarning": "700kB", "maximumError": "1MB" }], "outputHashing": "all", "optimization": { "fonts": false } }, "development": { "optimization": false, "sourceMap": true } },
+          "configurations": {
+            "production": {
+              "budgets": [{ "type": "initial", "maximumWarning": "700kB", "maximumError": "1MB" }],
+              "outputHashing": "all",
+              "optimization": { "fonts": false, "styles": { "inlineCritical": false } }
+            },
+            "development": { "optimization": false, "sourceMap": true }
+          },
           "defaultConfiguration": "production"
         },
         "serve": { "builder": "@angular/build:dev-server", "configurations": { "production": { "buildTarget": "grocery-store-angular:build:production" }, "development": { "buildTarget": "grocery-store-angular:build:development" } }, "defaultConfiguration": "development" }
