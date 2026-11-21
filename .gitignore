@@ -19,11 +19,12 @@ TestResults/
 !.env.example
 appsettings.Development.json
 
-# Local Markdown documentation
+# Local documentation
 # Theo yêu cầu dự án: chỉ README.md ở root được commit.
 # docs ko dc xuat hien trong repo
 docs/
 *.md
+*.docx
 !/README.md
 
 # IDE/OS

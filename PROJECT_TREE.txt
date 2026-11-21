@@ -120,7 +120,6 @@
 ./frontend/src/shared/hooks/.gitkeep
 ./frontend/src/shared/lib/.gitkeep
 ./frontend/src/shared/types/.gitkeep
-./project-documents/System_analysis_Tap_hoa_chi_To_FINAL_v2_1.docx
 ./project-documents/deployment_architecture.png
 ./project-documents/erd_catalog_inventory.png
 ./project-documents/erd_overview.png

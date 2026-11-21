@@ -99,7 +99,7 @@ webShop/
 │   │   └── shared/                       # Shared UI components, hooks, utilities, API clients
 ├── database/                             # Script database seed & schema initialization
 ├── deploy/                               # Mẫu cấu hình deployment (Render, Docker, Cloudflare)
-└── docs/                                 # Tài liệu thiết kế hệ thống, ADR, API specs, phases
+└── project-documents/                    # Sơ đồ kiến trúc và dữ liệu (PNG)
 ```
 
 ---
@@ -248,18 +248,6 @@ Khi triển khai backend đã cập nhật, thêm origin chính xác của Worke
    - **Output directory**: `frontend/dist`
    - **Environment Variable (Build-time)**: `VITE_API_BASE_URL=https://<your-api-domain>/api`
 3. Sau khi deploy xong, nhớ cập nhật biến `Cors__AllowedOrigins__0` trên Render Backend khớp với URL domain của Cloudflare Pages.
-
----
-
-## 📄 Tài liệu Dự án Chi tiết
-
-Để tìm hiểu chi tiết hơn về thiết kế hệ thống, kiến trúc và quy trình phát triển, tham khảo thư mục `docs/`:
-
-- [Mô tả Thiết kế Hệ thống](docs/system-design.md)
-- [Kiến trúc Tổng quan Backend & Frontend](docs/architecture.md)
-- [Quy chuẩn Đặt tên & Coding Conventions](docs/naming-convention.md)
-- [Báo cáo Trạng thái Dự án & Release Gates](docs/current-status.md)
-- [Hướng dẫn Phát triển theo Phase](docs/phases.md)
 
 ---
 
