@@ -1,0 +1,11 @@
+@import "./app/styles/global.css";
+@import "./app/styles/layouts/PublicLayout.css";
+@import "./app/styles/layouts/DashboardLayout.css";
+@import "./app/styles/components/ProductCard.css";
+@import "./app/styles/pages/CatalogPage.css";
+@import "./app/styles/pages/ProductDetailPage.css";
+@import "./app/styles/pages/CartPage.css";
+@import "./app/styles/pages/CheckoutPage.css";
+@import "./app/styles/pages/AuthPage.css";
+@import "./app/styles/pages/OrderTrackingPage.css";
+@import "./app/styles/pages/ManagementPage.css";

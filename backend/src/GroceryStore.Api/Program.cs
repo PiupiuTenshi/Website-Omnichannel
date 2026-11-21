@@ -1,11 +1,13 @@
 using GroceryStore.Application;
 using GroceryStore.Api.BackgroundServices;
 using GroceryStore.Api.Configuration;
+using GroceryStore.Api.Health;
 using GroceryStore.Api.Middlewares;
 using GroceryStore.Infrastructure;
 using GroceryStore.Persistence;
 using GroceryStore.Persistence.Seeding;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,7 +49,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseReadinessCheck>("database", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
 builder.Services.AddHostedService<ExpiredPromotionCleanupService>();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -104,7 +107,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 var isDemoIdentitySeedCommand = args.Contains("--seed-demo-identities", StringComparer.Ordinal);
 var isDemoCatalogSeedCommand = args.Contains("--seed-demo-catalog", StringComparer.Ordinal);
@@ -130,46 +137,46 @@ if (builder.Configuration.GetValue<bool>("DemoIdentity:Enabled") || isDemoIdenti
 }
 
 // This maintenance seed mutates data and must be explicitly enabled for a demo environment.
-if (builder.Configuration.GetValue("StartupTasks:SeedProductSuppliers", true))
+if (builder.Configuration.GetValue<bool>("StartupTasks:SeedProductSuppliers"))
 {
-try
-{
-    await using var scope = app.Services.CreateAsyncScope();
-    var context = scope.ServiceProvider.GetRequiredService<GroceryStore.Persistence.Context.ApplicationDbContext>();
-    var supplier = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Suppliers, s => s.IsActive);
-    if (supplier == null)
+    try
     {
-        supplier = new GroceryStore.Domain.Entities.Supplier("Nhà cung cấp Tổng hợp", "Nguyễn Văn A", "0909090909", "ncc@demo.local", "204 Tô Hiến Thành, Đà Lạt", true);
-        await context.Suppliers.AddAsync(supplier);
-        await context.SaveChangesAsync();
-    }
-
-    var productIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-        System.Linq.Queryable.Select(context.Products, p => p.ProductId)
-    );
-
-    var linkedProductIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-        System.Linq.Queryable.Select(context.ProductSuppliers, ps => ps.ProductId)
-    );
-
-    var unlinkedProductIds = productIds.Except(linkedProductIds).ToList();
-
-    if (unlinkedProductIds.Count > 0)
-    {
-        foreach (var productId in unlinkedProductIds)
+        await using var scope = app.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<GroceryStore.Persistence.Context.ApplicationDbContext>();
+        var supplier = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Suppliers, s => s.IsActive);
+        if (supplier == null)
         {
-            await context.ProductSuppliers.AddAsync(
-                new GroceryStore.Domain.Entities.ProductSupplier(productId, supplier.SupplierId, "PROD-" + productId.ToString().Substring(0, 8).ToUpper(), true)
-            );
+            supplier = new GroceryStore.Domain.Entities.Supplier("Nhà cung cấp Tổng hợp", "Nguyễn Văn A", "0909090909", "ncc@demo.local", "204 Tô Hiến Thành, Đà Lạt", true);
+            await context.Suppliers.AddAsync(supplier);
+            await context.SaveChangesAsync();
         }
-        await context.SaveChangesAsync();
+
+        var productIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+            System.Linq.Queryable.Select(context.Products, p => p.ProductId)
+        );
+
+        var linkedProductIds = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+            System.Linq.Queryable.Select(context.ProductSuppliers, ps => ps.ProductId)
+        );
+
+        var unlinkedProductIds = productIds.Except(linkedProductIds).ToList();
+
+        if (unlinkedProductIds.Count > 0)
+        {
+            foreach (var productId in unlinkedProductIds)
+            {
+                await context.ProductSuppliers.AddAsync(
+                    new GroceryStore.Domain.Entities.ProductSupplier(productId, supplier.SupplierId, "PROD-" + productId.ToString().Substring(0, 8).ToUpper(), true)
+                );
+            }
+            await context.SaveChangesAsync();
+        }
     }
-}
-catch (Exception ex)
-{
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "An error occurred while seeding product suppliers.");
-}
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding product suppliers.");
+    }
 }
 
 if (isDemoCatalogSeedCommand || isDemoCatalogVerifyCommand || isDemoImageSeedCommand)

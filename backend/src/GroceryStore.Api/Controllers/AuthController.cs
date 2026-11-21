@@ -12,9 +12,12 @@ public sealed class AuthController : ControllerBase
 {
     private readonly AuthService authService;
 
-    public AuthController(AuthService authService)
+    private readonly IConfiguration configuration;
+
+    public AuthController(AuthService authService, IConfiguration configuration)
     {
         this.authService = authService;
+        this.configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -71,7 +74,17 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
-        await authService.RequestPasswordResetAsync(new RequestPasswordResetCommand(request.Identifier, request.ResetUrl), cancellationToken);
+        var allowedOrigins = configuration.GetSection("Auth:PasswordResetAllowedOrigins").Get<string[]>() ?? [];
+        var frontendOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
+        if (!Uri.TryCreate(request.ResetUrl, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && !(uri.IsLoopback && uri.Scheme == Uri.UriSchemeHttp)) ||
+            uri.AbsolutePath != "/reset-password" || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0 ||
+            !allowedOrigins.Concat(frontendOrigins).Contains(uri.GetLeftPart(UriPartial.Authority), StringComparer.OrdinalIgnoreCase))
+        {
+            return BadRequest(new ProblemDetails { Title = "Invalid password reset URL." });
+        }
+
+        await authService.RequestPasswordResetAsync(new RequestPasswordResetCommand(request.Identifier, uri.AbsoluteUri), cancellationToken);
         return Accepted();
     }
 
