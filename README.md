@@ -22,6 +22,24 @@ Hệ thống quản lý bán hàng Omnichannel toàn diện dành cho cửa hàn
 
 Sau khi đăng nhập, bạn có thể tìm sản phẩm, thêm vào giỏ và đặt một đơn mẫu. Giỏ hàng và đơn thử chỉ tồn tại trong tab hiện tại. Để thử các vai trò nhân viên bán hàng, quản lý và quản trị viên, chạy dự án với database test theo hướng dẫn bên dưới.
 
+## Phạm vi MVP
+
+MVP phục vụ một cửa hàng tạp hóa bán trên website và tại quầy, dùng chung danh mục sản phẩm và tồn kho theo lô.
+
+| Vai trò | Luồng trong MVP | Kết quả cần đạt |
+| --- | --- | --- |
+| Khách và `Buyer` | Tìm sản phẩm, quản lý giỏ, đặt hàng COD và theo dõi đơn. Người đã đăng nhập xem được lịch sử đơn của tài khoản. | Đơn lưu các dòng hàng, trạng thái và chủ sở hữu. Khách chỉ xem được đơn của phiên mình. |
+| `Seller` | Tìm sản phẩm theo tên, SKU hoặc mã vạch, thanh toán tại quầy và ghi nhận hóa đơn. | Đơn POS tính tiền thanh toán và cập nhật tồn kho theo lô. |
+| `Manager` | Quản lý danh mục, biến thể, nhà cung cấp, nhập kho, xem tồn thấp và xử lý đơn online. | Website và POS sử dụng cùng dữ liệu sản phẩm và tồn kho. Thao tác quản lý yêu cầu đúng vai trò. |
+| `Admin` | Quản lý người dùng, vai trò và quyền truy cập. | API từ chối thao tác quản trị nếu người gọi thiếu quyền. |
+
+### Ngoài phạm vi MVP
+
+- Quản lý nhiều chi nhánh, chuyển kho liên chi nhánh và đồng bộ với sàn thương mại điện tử bên ngoài.
+- Cổng thanh toán trực tuyến, xử lý thẻ, đối soát ngân hàng tự động và tạo vận đơn qua hãng vận chuyển.
+- Ứng dụng iOS/Android riêng và POS hoạt động offline rồi đồng bộ.
+- Khuyến mãi nâng cao, đánh giá, đổi trả, báo cáo doanh thu và in nhãn giá là các chức năng mở rộng. Luồng MVP có thể chạy độc lập với chúng.
+
 ---
 
 ## 🌟 Chức năng nổi bật
@@ -109,6 +127,70 @@ webShop/
 └── project-documents/                    # Sơ đồ kiến trúc và dữ liệu (PNG)
 ```
 
+## Mô hình dữ liệu
+
+SQL Server lưu dữ liệu qua EF Core. Sơ đồ dưới đây rút gọn các quan hệ của luồng MVP. Tệp [ApplicationDbContext](backend/src/GroceryStore.Persistence/Context/ApplicationDbContext.cs) và [migrations](backend/src/GroceryStore.Persistence/Migrations) mô tả khóa, chỉ mục và ràng buộc vật lý.
+
+```mermaid
+erDiagram
+    CATEGORY ||--o{ PRODUCT : groups
+    UNIT_OF_MEASURE ||--o{ PRODUCT : measures
+    PRODUCT ||--o{ PRODUCT_VARIANT : has
+    PRODUCT ||--o{ PRODUCT_IMAGE : displays
+    PRODUCT ||--o{ PRODUCT_SUPPLIER : sourced_by
+    SUPPLIER ||--o{ PRODUCT_SUPPLIER : supplies
+    PRODUCT_VARIANT ||--o{ INVENTORY_BATCH : stocked_in
+    SUPPLIER o|--o{ INVENTORY_BATCH : delivers
+    INVENTORY_BATCH ||--o{ INVENTORY_TRANSACTION : records
+    INVENTORY_BATCH ||--o{ INVENTORY_RESERVATION : holds
+    ASPNET_USER o|--o{ SHOPPING_CART : owns
+    SHOPPING_CART ||--o{ SHOPPING_CART_ITEM : contains
+    PRODUCT_VARIANT ||--o{ SHOPPING_CART_ITEM : selected_as
+    ASPNET_USER o|--o{ ONLINE_ORDER : places
+    ONLINE_ORDER ||--o{ ONLINE_ORDER_ITEM : contains
+    PRODUCT_VARIANT ||--o{ ONLINE_ORDER_ITEM : ordered_as
+    ONLINE_ORDER_ITEM ||--o{ ONLINE_ORDER_ALLOCATION : allocated_to
+    INVENTORY_BATCH ||--o{ ONLINE_ORDER_ALLOCATION : fulfills
+    POS_ORDER ||--o{ POS_ORDER_ITEM : contains
+    PRODUCT_VARIANT ||--o{ POS_ORDER_ITEM : sold_as
+```
+
+| Nhóm | Bảng chính và quy tắc |
+| --- | --- |
+| Định danh | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `RefreshSessions`. Đơn online và giỏ hàng có thể thuộc tài khoản hoặc phiên khách. |
+| Danh mục | `Products` dùng `CategoryId` và `UnitOfMeasureId`. `ProductVariants` có khóa chính `ProductVariantId` và khóa ngoại `ProductId`. SKU và mã vạch có giá trị phải duy nhất. `ProductImages` gắn với sản phẩm. |
+| Kho | `ProductSuppliers` nối sản phẩm với nhà cung cấp bằng khóa ghép `(ProductId, SupplierId)`. `InventoryBatches` có khóa chính `InventoryBatchId`, lưu số lượng và hạn sử dụng theo `ProductVariantId`. `InventoryTransactions` ghi biến động và `InventoryReservations` giữ hàng có thời hạn. |
+| Bán hàng | `ShoppingCartItems` nối giỏ với biến thể. `OnlineOrderItems` thuộc `OnlineOrders` qua `OnlineOrderId`. `OnlineOrderAllocations` nối `OnlineOrderItemId` với `InventoryBatchId`. POS dùng `Orders` và `OrderItems`, nối bằng `OrderId`. |
+| Sau bán và cấu hình | `ProductReviews` và `ReturnRequests` tham chiếu dòng đơn online. `StoreSettings` và `StoreContactNumbers` lưu thông tin cửa hàng. |
+
+[ERD tổng quan](project-documents/erd_overview.png) · [ERD danh mục và kho](project-documents/erd_catalog_inventory.png) · [ERD bán hàng và đổi trả](project-documents/erd_sales_returns.png)
+
+## Danh sách API endpoint
+
+Base URL local là `http://localhost:5261`. Nối tiền tố với đường dẫn con trong bảng để lấy URL đầy đủ. Với endpoint có phân quyền, gửi `Authorization: Bearer <access-token>`. Các thao tác giỏ của khách dùng `X-Guest-Cart-Token` hoặc `X-Cart-Session`. API đơn online dùng `X-Cart-Session` ở các thao tác gắn với giỏ hoặc chủ đơn.
+
+| Nhóm và tiền tố | Endpoint | Quyền |
+| --- | --- | --- |
+| Vận hành | `GET /health`, `GET /health/ready` | Công khai |
+| Danh mục `/api` | `GET /categories`, `GET /units-of-measure`, `GET /products`, `GET /products/{productId}`, `GET /products/by-slug/{slug}`, `GET /product-images/{productImageId}` | Công khai |
+| Xác thực `/api/auth` | `POST /register`, `POST /login`, `POST /refresh`, `POST /logout`, `POST /confirm-email`, `POST /confirm-phone`, `POST /password-resets`, `POST /password-resets/confirm` | Theo thông tin đăng nhập, token hoặc mã của từng endpoint |
+| Hồ sơ `/api/account` | `GET /profile`, `PUT /profile`, `POST /change-password`, `POST /contact-changes`, `POST /contact-changes/confirm`, `GET /orders` | Đã đăng nhập |
+| Giỏ `/api/cart` | `GET` ở tiền tố, `PUT /items`, `DELETE /items/{productVariantId}`, `POST /reservations`, `POST /merge` | Phiên khách hoặc chủ giỏ. `/merge` yêu cầu đăng nhập. |
+| Đơn online `/api/online-orders` | `POST /checkout`, `GET /{onlineOrderId}`, `POST /{onlineOrderId}/cancel`, `POST /{onlineOrderId}/accept-quote`, `GET /mine` | Phiên khách hoặc tài khoản sở hữu đơn. `/mine` yêu cầu đăng nhập. `Admin` và `Manager` có thể xem chi tiết. |
+| Vận hành đơn `/api/online-orders` | `GET` ở tiền tố. Với `/{onlineOrderId}`, thêm `PUT /shipping-quote` hoặc `POST` cho `/confirm-cod-payment`, `/preparing`, `/delivering`, `/delivered`, `/delivery-failed`, `/returned`. | `Admin`, `Manager` |
+| Danh mục quản trị `/api/admin/catalog` | `GET` và `POST /categories`, `PUT` và `DELETE /categories/{categoryId}`<br>`GET` và `POST /units-of-measure`, `PUT` và `DELETE /units-of-measure/{unitOfMeasureId}`<br>`GET` và `POST /products`, `GET`, `PUT` và `DELETE /products/{productId}` | `Admin`, `Manager` |
+| Biến thể và ảnh `/api/admin/catalog/products/{productId}` | `POST /variants`, `PUT` và `DELETE /variants/{productVariantId}`, `POST /images`, `DELETE /images/{productImageId}` | `Admin`, `Manager` |
+| Kho `/api/admin/inventory` | `GET` và `POST /suppliers`, `PUT` và `DELETE /suppliers/{supplierId}`, `POST /product-suppliers`<br>`GET /batches`, `GET /low-stock`, `GET /variants/{productVariantId}/stats`, `POST /receipts`, `POST /batches/{inventoryBatchId}/adjustments` | `Admin`, `Manager` |
+| POS `/api/admin/pos` | `GET /products`, `POST /checkout` | `Admin`, `Manager`, `Seller` |
+| Đánh giá `/api/reviews` | `POST` ở tiền tố, `PUT /{reviewId}/reply`, `POST /{reviewId}/hide` | `Buyer` tạo. `Admin` hoặc `Manager` phản hồi hoặc ẩn. |
+| Đổi trả `/api/return-requests` | `POST` ở tiền tố, `PUT /{returnRequestId}/resolve` | `Buyer` gửi yêu cầu. `Admin` hoặc `Manager` xử lý. |
+| Cấu hình và báo cáo | `GET /api/store-settings/public`, `GET` và `PUT /api/store-settings`, `GET /api/admin/reports` | Đường dẫn `/public` công khai. Các đường dẫn còn lại yêu cầu `Admin` hoặc `Manager`. |
+| Người dùng và kiểm toán | `GET` và `POST /api/users`, `DELETE /api/users/{userId}`, `PUT /api/users/{userId}/activation`, `PUT /api/users/{userId}/role`, `GET /api/audit-logs` | `Admin` |
+
+`GET /api/products` nhận `search`, `categoryId`, `page` và `pageSize`. Mở [Swagger UI](http://localhost:5261/swagger) hoặc [OpenAPI JSON](http://localhost:5261/swagger/v1/swagger.json) khi API chạy ở môi trường Development để xem schema yêu cầu và phản hồi. Các đường dẫn trong bảng được đối chiếu với [controller ASP.NET Core](backend/src/GroceryStore.Api/Controllers).
+
+Khi chạy Angular qua [Cloudflare Worker](angular-client/worker/index.mjs), `GET /api/session` lấy trạng thái phiên và `DELETE /api/session` xóa cookie đăng nhập. Hai endpoint này được Worker xử lý.
+
 ---
 
 ## 🛠️ Môi trường & Yêu cầu Hệ thống
@@ -169,6 +251,27 @@ npm run dev
 ```
 
 Mở [giao diện React](http://localhost:5173). Nếu muốn thử Angular, chạy `npm ci` và `npm start` trong `angular-client` rồi mở [giao diện Angular](http://localhost:4200).
+
+### Kiểm chứng API kết nối SQL Server thật
+
+Ngày **21/11/2026**, smoke test chạy trên Windows với .NET SDK `10.0.404` và SQL Server 2022 Developer `16.0.4215.2` trong Docker. EF Core áp dụng **13 migrations** vào database test mới `OmnichannelApiSmoke` rồi nạp dữ liệu mẫu. ASP.NET Core chạy ở `http://127.0.0.1:5262`.
+
+| Kiểm tra | Kết quả thực tế |
+| --- | --- |
+| `GET /health/ready` | `200 Healthy` |
+| `GET /api/categories` | `200`, trả về 5 danh mục |
+| `GET /api/products?page=1&pageSize=3` | `200`, `totalCount=29` và 3 sản phẩm ở trang đầu |
+| `GET /api/products/by-slug/banh-oreo-vani-133g` | `200`, trả về đúng slug đã seed |
+| Đối chiếu qua `sqlcmd` | `__EFMigrationsHistory`: 13, `Categories`: 5, `Products`: 29 |
+
+Để tái lập với SQL Server trên máy, chạy từ thư mục gốc và thay tên instance nếu cần.
+
+```powershell
+$env:ConnectionStrings__DefaultConnection = 'Server=localhost;Database=OmnichannelApiSmoke;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False'
+./scripts/Test-ApiSqlServer.ps1
+```
+
+[Script kiểm chứng](scripts/Test-ApiSqlServer.ps1) tự áp migration, seed danh mục, khởi chạy API, kiểm tra HTTP và dừng API khi hoàn tất. Job `sql-smoke` trong [GitHub Actions](https://github.com/PiupiuTenshi/Website-Omnichannel/actions/workflows/backend-ci.yml) chạy cùng script với một container SQL Server riêng. [Hướng dẫn chạy SQL Server bằng Docker](https://learn.microsoft.com/sql/linux/quickstart-install-connect-docker)
 
 ---
 
